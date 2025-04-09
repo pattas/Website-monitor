@@ -30,10 +30,12 @@ A web application built with Flask and Python to monitor website uptime, respons
 
 *(Optional: Insert a screenshot of the application dashboard here)*
 
-```
-<!-- Example Markdown for image -->
-<!-- ![App Screenshot](path/to/your/screenshot.png) -->
-```
+![image](https://github.com/user-attachments/assets/90edc8bc-a81d-403a-954c-66b63d053bd1)
+![image](https://github.com/user-attachments/assets/92b40180-85dc-4fb4-bb5a-c73aeb1967d7)
+![image](https://github.com/user-attachments/assets/b4b456d8-ad44-4e58-845a-8bf8cc1d6f30)
+![image](https://github.com/user-attachments/assets/7a8b4aee-b565-45cf-b159-ea8146163680)
+
+
 
 ## Technologies Used
 
