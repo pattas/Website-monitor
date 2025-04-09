@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<div class="row">
+    <div class="col-lg-7 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-list me-2"></i>Monitored URLs
+            </div>
+            <div class="card-body">
+                {% if urls_with_status %}
+                <ul class="list-group list-group-flush">
+                    {% for item in urls_with_status %}
+                    {% set url = item.url %}
+                    {% set log = item.latest_log %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            {# Status Indicator #}
+                            <span class="me-2">
+                                {% if log %}
+                                    {% if log.status_code and log.status_code >= 200 and log.status_code < 300 %}
+                                        <i class="fas fa-check-circle text-success" title="OK ({{ log.status_code }} - {{ log.response_time_ms|round(0) }}ms) at {{ log.timestamp.strftime('%H:%M:%S') }}"></i>
+                                    {% elif log.status_code %}
+                                        <i class="fas fa-exclamation-triangle text-warning" title="Warning ({{ log.status_code }} - {{ log.response_time_ms|round(0) }}ms) at {{ log.timestamp.strftime('%H:%M:%S') }}"></i>
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-danger" title="Error: {{ log.error_message or 'Unknown Error' }} at {{ log.timestamp.strftime('%H:%M:%S') }}"></i>
+                                    {% endif %}
+                                {% else %}
+                                    <i class="fas fa-question-circle text-muted" title="No data yet"></i>
+                                {% endif %}
+                            </span>
+                            {# URL Name and Link #}
+                            <strong>{{ url.name or url.url }}</strong><br>
+                            <small class="text-muted">{{ url.url }}</small>
+                        </div>
+                        <div>
+                            {# Link to Detail Page #}
+                            <a href="{{ url_for('view_url_details', url_id=url.id) }}" class="btn btn-sm btn-outline-primary me-1" title="View Details">
+                                <i class="fas fa-eye"></i>
+                                <!-- <i class="fas fa-chart-bar"></i> -->
+                            </a>
+                            {# Delete Button (triggers modal) #}
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ url.id }}" title="Delete URL">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </li>
+
+                    <!-- Delete Confirmation Modal -->
+                    <div class="modal fade" id="deleteModal{{ url.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ url.id }}" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="deleteModalLabel{{ url.id }}">Confirm Deletion</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            Are you sure you want to delete monitoring for <strong>{{ url.name or url.url }}</strong>?
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <a href="{{ url_for('delete_url', url_id=url.id) }}" class="btn btn-danger">Delete</a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">You are not monitoring any URLs yet. Add one using the form!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5 mb-4">
+         <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-plus-circle me-2"></i>Add New URL
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_url') }}" method="post" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.url.label(class="form-label") }}<br>
+                        {{ form.url(class="form-control" + (" is-invalid" if form.url.errors else ""), placeholder="https://example.com") }}
+                        {% if form.url.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.url.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}<br>
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="My Awesome Site (Optional)") }}
+                         {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.name.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-plus me-2"></i>{{ form.submit.label.text }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-2 mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                 <i class="fas fa-chart-area me-2"></i>Monitoring Overview (Response Time)
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="monitoringChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script> <!-- Adapter for better time axis -->
+
+<!-- Chart rendering script -->
+<script>
+    const ctx = document.getElementById('monitoringChart');
+    let monitoringChart;
+
+    async function fetchChartData() {
+        try {
+            const response = await fetch('{{ url_for("monitoring_data") }}');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            renderChart(data);
+        } catch (error) {
+            console.error("Could not fetch chart data:", error);
+            // Display error message on canvas
+             const chartCtx = ctx.getContext('2d');
+             chartCtx.clearRect(0, 0, ctx.width, ctx.height); // Clear previous content
+             chartCtx.fillStyle = '#dc3545'; // Red color for error
+             chartCtx.textAlign = 'center';
+             chartCtx.fillText('Error loading chart data. Please try again later.', ctx.width / 2, ctx.height / 2);
+        }
+    }
+
+    function renderChart(data) {
+        if (monitoringChart) {
+            monitoringChart.destroy();
+        }
+
+        // Ensure datasets have parsed data if needed, depending on API format
+        // Our API already structures it correctly for Chart.js
+
+        monitoringChart = new Chart(ctx, {
+            type: 'line',
+            data: data, // Directly use the structured data from API
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                  mode: 'index',
+                  intersect: false,
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Response Time (ms)',
+                            font: { weight: 'bold' }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)' // Lighter grid lines
+                        }
+                    },
+                     x: {
+                        type: 'time', // Use time scale
+                        time: {
+                            unit: 'minute', // Adjust unit based on data density (e.g., 'hour', 'day')
+                            tooltipFormat: 'PPpp', // Format for tooltips (requires date-fns)
+                             displayFormats: { // How time is displayed on the axis
+                                minute: 'HH:mm',
+                                hour: 'HH:mm',
+                                day: 'MMM d',
+                                month: 'MMM yyyy'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            font: { weight: 'bold' }
+                        },
+                         grid: {
+                            display: false // Hide vertical grid lines for cleaner look
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true, // Use point style in legend
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: { weight: 'bold' },
+                        bodyFont: { size: 14 },
+                        padding: 10,
+                        cornerRadius: 4,
+                        displayColors: true, // Show color box in tooltip
+                        boxPadding: 4,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(2) + ' ms';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                 elements: {
+                    line: {
+                        tension: 0.3 // Smoother lines
+                    },
+                    point:{
+                        radius: 3, // Slightly larger points
+                        hoverRadius: 5 // Larger on hover
+                    }
+                }
+            }
+        });
+    }
+
+    // Fetch data and render chart when the page loads
+    document.addEventListener('DOMContentLoaded', fetchChartData);
+
+    // Optional: Auto-refresh the chart data every 30 seconds
+    // setInterval(fetchChartData, 30000); // 30 seconds
+
+</script>
+{% endblock %}

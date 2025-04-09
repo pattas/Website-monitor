@@ -1,0 +1,127 @@
+/* General Styling */
+body {
+    padding-bottom: 60px; /* Add padding for footer */
+    background-color: #f8f9fa; /* Light background */
+}
+
+/* Navbar Adjustments */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Main Content Area */
+main.container {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    margin-top: 2rem; /* Add more space below navbar */
+    margin-bottom: 2rem;
+}
+
+/* Card Styling for Dashboard sections */
+.card {
+    margin-bottom: 1.5rem;
+    border: none; /* Remove default border */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* Softer shadow */
+    transition: transform 0.2s ease-in-out;
+}
+.card:hover {
+    transform: translateY(-5px); /* Slight lift on hover */
+}
+
+.card-header {
+    background-color: #eef2f7; /* Lighter header */
+    font-weight: bold;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* List Group Styling */
+.card .list-group-flush .list-group-item {
+    background-color: #fff; /* Force white background for all items */
+    border-color: #e9ecef; /* Lighter borders */
+    /* list-group-flush handles border-top removal, we just ensure bottom border */
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+/* Ensure last item doesn't have double border if card has padding */
+.card .list-group-flush .list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa; /* Subtle hover effect */
+}
+
+.list-group-item strong {
+    color: var(--bs-primary); /* Use theme primary color */
+}
+
+/* Form Styling */
+.form-label {
+    font-weight: 500; /* Slightly less bold */
+}
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+.btn-primary {
+    /* Use theme default */
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.btn-primary:hover {
+     transform: scale(1.03);
+}
+.btn-danger {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.btn-danger:hover {
+     transform: scale(1.03);
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 40vh; /* Adjust height as needed */
+    width: 100%;
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 0.3rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#monitoringChart {
+    /* Chart.js will manage size within container */
+}
+
+/* Footer Styling */
+.footer {
+    /* position: absolute; */ /* Removed to keep footer in flow */
+    /* bottom: 0; */
+    width: 100%;
+    line-height: 60px; /* Vertically center the text there */
+    background-color: #e9ecef; /* Match card header */
+    box-shadow: 0 -1px 3px rgba(0,0,0,.1);
+    margin-top: 2rem; /* Add margin to separate from content above */
+    text-align: center; /* Ensure text is centered */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    main.container {
+        padding: 1rem;
+    }
+    .chart-container {
+        height: 50vh; /* Taller on smaller screens */
+    }
+}
+
+/* Alert styling */
+.alert {
+    text-align: left; /* Override previous center alignment */
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
