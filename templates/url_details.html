@@ -19,7 +19,8 @@
             </button>
         </form>
          {# Full Scan Button #}
-         <form action="{{ url_for('run_full_scan', url_id=url.id) }}" method="POST" class="mb-2">
+         <form action="{{ url_for('run_full_scan', url_id=url.id) }}" method="POST" class="me-2 mb-2">
+            {{ run_scan_form.hidden_tag() }}
             {% set can_check_full = url.last_full_scan is none or (now() - url.last_full_scan) > timedelta(hours=23) %}
             <button type="submit" class="btn btn-sm btn-outline-info" {{ 'disabled' if not can_check_full else '' }} title="{{ 'Run Full Scan (RDAP, DNS, Traceroute)' if can_check_full else 'Full scan run recently' }}">
                  <i class="fas fa-network-wired me-1"></i> Run Full Scan
@@ -120,9 +121,10 @@
         <div class="card h-100">
             <div class="card-header"><i class="fas fa-address-card me-2"></i>RDAP Scan Results (for IP: {{ scan_results.ip_address }})</div>
             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {# Display the raw RDAP JSON string within pre/code tags #}
                 <pre><code class="language-json">{{ scan_results.rdap }}</code></pre>
             </div>
-            <div class="card-footer text-muted"><small>Scan Run: {{ url.last_full_scan.strftime('%Y-%m-%d %H:%M UTC') }}</small></div>
+            <div class="card-footer text-muted"><small>Scan Run: {{ url.last_full_scan.strftime('%Y-%m-%d %H:%M UTC') if url.last_full_scan else 'N/A' }}</small></div>
         </div>
     </div>
     {# DNS Results #}

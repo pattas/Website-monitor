@@ -59,8 +59,11 @@
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            {# Added class confirm-delete-link #}
-                            <a href="{{ url_for('delete_url', url_id=url.id) }}" class="btn btn-danger confirm-delete-link">Delete</a>
+                            {# Use a form to properly send a POST request with CSRF protection #}
+                            <form action="{{ url_for('delete_url', url_id=url.id) }}" method="POST" class="d-inline">
+                              {{ delete_forms[url.id].hidden_tag() }}
+                              <button type="submit" class="btn btn-danger confirm-delete-btn">Delete</button>
+                            </form>
                           </div>
                         </div>
                       </div>
@@ -256,19 +259,19 @@
     // Optional: Auto-refresh the chart data every 30 seconds
     // setInterval(fetchChartData, 30000); // 30 seconds
 
-    // --- Script to hide delete modal on confirm click ---
-    document.querySelectorAll('.confirm-delete-link').forEach(link => {
-        link.addEventListener('click', function(event) {
-            // Find the modal associated with this link
+    // --- Script to hide delete modal on form submit ---
+    document.querySelectorAll('.confirm-delete-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            // Find the modal associated with this button
             const modalElement = event.target.closest('.modal');
             if (modalElement) {
                 const modalInstance = bootstrap.Modal.getInstance(modalElement);
                 if (modalInstance) {
-                    // Hide the modal just before navigating away
+                    // Hide the modal just before form submission
                     modalInstance.hide();
                 }
             }
-            // Allow the default link behavior (navigation) to proceed
+            // Allow the form submission to proceed
         });
     });
 

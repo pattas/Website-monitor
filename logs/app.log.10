@@ -1,0 +1,111 @@
+2025-04-10 17:32:19,719 ERROR: Exception on /dashboard [GET] [in /var/data/python/lib/python3.12/site-packages/flask/app.py:875]
+Traceback (most recent call last):
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/patrik/Documents/work/WEB-test/app/routes.py", line 176, in dashboard
+    return render_template('dashboard.html', title='Dashboard', form=form, urls_with_status=urls_with_status)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/patrik/Documents/work/WEB-test/templates/dashboard.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/patrik/Documents/work/WEB-test/templates/base.html", line 53, in top-level template code
+    {% block app_content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/patrik/Documents/work/WEB-test/templates/dashboard.html", line 64, in block 'app_content'
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/utils.py", line 92, in from_obj
+    if hasattr(obj, "jinja_pass_arg"):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'csrf_token' is undefined
+2025-04-10 17:32:24,675 ERROR: Exception on /dashboard [GET] [in /var/data/python/lib/python3.12/site-packages/flask/app.py:875]
+Traceback (most recent call last):
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/patrik/Documents/work/WEB-test/app/routes.py", line 176, in dashboard
+    return render_template('dashboard.html', title='Dashboard', form=form, urls_with_status=urls_with_status)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/patrik/Documents/work/WEB-test/templates/dashboard.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/patrik/Documents/work/WEB-test/templates/base.html", line 53, in top-level template code
+    {% block app_content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/patrik/Documents/work/WEB-test/templates/dashboard.html", line 64, in block 'app_content'
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/utils.py", line 92, in from_obj
+    if hasattr(obj, "jinja_pass_arg"):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'csrf_token' is undefined
+2025-04-10 17:43:54,563 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:76]
+2025-04-10 17:43:54,568 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:149]
+2025-04-10 17:43:54,569 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:80]
+2025-04-10 17:43:54,604 INFO: Starting batch check for 1 URLs with 10 workers [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 17:43:54,609 INFO: Found 1 URLs in the database for initial scheduling. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:85]
+2025-04-10 17:43:54,873 INFO: Saved 1 logs from batch check [in /home/patrik/Documents/work/WEB-test/app/tasks.py:80]
+2025-04-10 17:43:56,201 INFO: Scheduled recurring advanced check for new URL https://example.org (ID: 3) [in /home/patrik/Documents/work/WEB-test/app/routes.py:209]
+2025-04-10 17:43:56,216 INFO: Scheduled initial immediate advanced check for new URL https://example.org (ID: 3) [in /home/patrik/Documents/work/WEB-test/app/routes.py:219]
+2025-04-10 17:43:56,224 INFO: Starting advanced check task for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:105]
+2025-04-10 17:43:56,622 INFO: Executed immediate standard check for new URL https://example.org (ID: 3) [in /home/patrik/Documents/work/WEB-test/app/routes.py:223]
+2025-04-10 17:43:56,687 INFO: Scheduled recurring advanced check for new URL https://example.net (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:209]
+2025-04-10 17:43:56,700 INFO: Scheduled initial immediate advanced check for new URL https://example.net (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:219]
+2025-04-10 17:43:56,703 INFO: Starting advanced check task for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:105]
+2025-04-10 17:43:57,520 INFO: Executed immediate standard check for new URL https://example.net (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:223]
+2025-04-10 17:43:57,569 INFO: Scheduled recurring advanced check for new URL https://example.edu (ID: 5) [in /home/patrik/Documents/work/WEB-test/app/routes.py:209]
+2025-04-10 17:43:57,583 INFO: Scheduled initial immediate advanced check for new URL https://example.edu (ID: 5) [in /home/patrik/Documents/work/WEB-test/app/routes.py:219]
+2025-04-10 17:43:57,587 INFO: Starting advanced check task for URL ID 5 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:105]
+2025-04-10 17:43:58,009 INFO: Advanced check task for URL ID 4: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:125]
+2025-04-10 17:43:58,027 INFO: Advanced check task for URL ID 3: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:125]
+2025-04-10 17:43:58,344 INFO: Executed immediate standard check for new URL https://example.edu (ID: 5) [in /home/patrik/Documents/work/WEB-test/app/routes.py:223]
+2025-04-10 17:43:58,370 INFO: Starting batch check for 5 URLs with 2 workers [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 17:43:58,795 INFO: Advanced check task for URL ID 5: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:125]
+2025-04-10 17:43:59,676 INFO: Saved 5 logs from batch check [in /home/patrik/Documents/work/WEB-test/app/tasks.py:80]
+2025-04-10 17:44:02,152 INFO: Removed advanced check job advanced_check_url_1 for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/routes.py:253]
+2025-04-10 17:44:22,468 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:76]
+2025-04-10 17:44:22,473 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:149]
+2025-04-10 17:44:22,474 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:80]

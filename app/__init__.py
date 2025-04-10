@@ -6,6 +6,7 @@ from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -28,6 +29,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login = LoginManager(app)
 login.login_view = 'login' # Function name for the login route
+csrf = CSRFProtect(app) # Initialize CSRF protection
 
 # Initialize APScheduler
 scheduler = BackgroundScheduler(
@@ -81,67 +83,63 @@ def schedule_initial_jobs(app_context):
             app.logger.debug("Inside app_context for initial job scheduling.")
             urls = db.session.scalars(sa.select(models.MonitoredURL)).all()
             app.logger.info(f"Found {len(urls)} URLs in the database for initial scheduling.")
+            
+            # Schedule batch check for all URLs
+            batch_job_id = 'batch_url_checks'
+            if not scheduler.get_job(batch_job_id):
+                scheduler.add_job(
+                    func=tasks.run_batch_url_checks,
+                    trigger='interval',
+                    seconds=app.config['STANDARD_CHECK_INTERVAL_SECONDS'],
+                    id=batch_job_id,
+                    args=[10],  # Use 10 workers for batch processing
+                    replace_existing=True,
+                    misfire_grace_time=60
+                )
+                app.logger.info(f"Scheduled batch check job '{batch_job_id}' for all URLs")
+            else:
+                app.logger.debug(f"Batch check job '{batch_job_id}' already exists")
+            
+            # For individual URLs, only schedule advanced checks
             if not urls:
-                app.logger.info("No URLs found to schedule.")
+                app.logger.info("No URLs found to schedule advanced checks.")
                 return
 
             for url in urls:
-                app.logger.debug(f"Processing URL ID: {url.id}, URL: {url.url}")
-                # Schedule standard check (e.g., every 5 seconds)
-                job_id_standard = f'check_url_{url.id}'
-            if not scheduler.get_job(job_id_standard):
-                scheduler.add_job(
-                    func=tasks.run_single_url_check,
-                    trigger='interval',
-                    seconds=5, # Changed from minutes=5
-                    id=job_id_standard,
-                    args=[url.id],
-                    replace_existing=True,
-                    misfire_grace_time=60 # Allow 1 minute delay before misfire
-                )
-                app.logger.info(f"Scheduled standard check job '{job_id_standard}' for URL ID {url.id}")
-            else:
-                app.logger.debug(f"Standard check job '{job_id_standard}' already exists for URL ID {url.id}")
+                app.logger.debug(f"Processing URL ID: {url.id}, URL: {url.url} for advanced checks")
+                
+                # Schedule advanced check (e.g., every 24 hours)
+                job_id_advanced = f'advanced_check_url_{url.id}'
+                if not scheduler.get_job(job_id_advanced):
+                    scheduler.add_job(
+                        func=tasks.run_single_url_advanced_check,
+                        trigger='interval',
+                        hours=app.config['ADVANCED_CHECK_INTERVAL_HOURS'], # Use config value
+                        id=job_id_advanced,
+                        args=[url.id],
+                        replace_existing=True,
+                        misfire_grace_time=3600 # Allow 1 hour delay
+                    )
+                    app.logger.info(f"Scheduled advanced check job '{job_id_advanced}' for URL ID {url.id}")
+                else:
+                    app.logger.debug(f"Recurring advanced check job '{job_id_advanced}' already exists for URL ID {url.id}")
 
-            # Schedule advanced check (e.g., every 24 hours)
-            job_id_advanced = f'advanced_check_url_{url.id}'
-            if not scheduler.get_job(job_id_advanced):
-                scheduler.add_job(
-                    func=tasks.run_single_url_advanced_check,
-                    trigger='interval',
-                    hours=24, # Adjust interval as needed
-                    id=job_id_advanced,
-                    args=[url.id],
-                    replace_existing=True,
-                    misfire_grace_time=3600 # Allow 1 hour delay
-                )
-                app.logger.info(f"Scheduled advanced check job '{job_id_advanced}' for URL ID {url.id}")
-            else:
-                app.logger.debug(f"Recurring advanced check job '{job_id_advanced}' already exists for URL ID {url.id}")
+                # Also schedule an immediate initial run if it hasn't happened
+                job_id_initial_advanced = f'advanced_check_url_{url.id}_initial'
+                if not scheduler.get_job(job_id_initial_advanced) and not url.last_advanced_check:
+                    try:
+                        app.logger.debug(f"Attempting to schedule initial immediate advanced check job '{job_id_initial_advanced}' for URL ID {url.id}")
+                        scheduler.add_job(
+                            func=tasks.run_single_url_advanced_check,
+                            trigger='date', # Run immediately
+                            id=job_id_initial_advanced,
+                            args=[url.id]
+                        )
+                        app.logger.info(f"Scheduled initial immediate advanced check job '{job_id_initial_advanced}' for URL ID {url.id}")
+                    except Exception as e_initial:
+                        app.logger.error(f"Error scheduling initial immediate advanced check for {url.id}: {e_initial}", exc_info=True)
 
-            # Also schedule an immediate initial run if it hasn't happened
-            # Note: A 'date' trigger job normally runs once and is removed.
-            # We add it here to ensure data is populated on first start after adding this code.
-            # Subsequent starts won't re-add it if the recurring job exists (or if the db stores the job).
-            # A better approach might be to check url.last_advanced_check, but this is simpler for now.
-            job_id_initial_advanced = f'advanced_check_url_{url.id}_initial'
-            # Removed 'and not url.last_advanced_check' to ensure it tries to schedule once after code update
-            if not scheduler.get_job(job_id_initial_advanced):
-                 try:
-                     app.logger.debug(f"Attempting to schedule initial immediate advanced check job '{job_id_initial_advanced}' for URL ID {url.id}")
-                     scheduler.add_job(
-                         func=tasks.run_single_url_advanced_check,
-                         trigger='date', # Run immediately
-                         id=job_id_initial_advanced,
-                         args=[url.id]
-                         # No replace_existing needed for date jobs usually
-                     )
-                     app.logger.info(f"Scheduled initial immediate advanced check job '{job_id_initial_advanced}' for URL ID {url.id}")
-                 except Exception as e_initial:
-                     app.logger.error(f"Error scheduling initial immediate advanced check for {url.id}: {e_initial}", exc_info=True)
-
-
-        app.logger.debug("Finished iterating through URLs for initial scheduling.")
+            app.logger.debug("Finished scheduling jobs.")
     except Exception as e:
         app.logger.error(f"Error during initial job scheduling: {e}", exc_info=True)
 

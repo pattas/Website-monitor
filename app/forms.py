@@ -35,3 +35,11 @@ class AddURLForm(FlaskForm):
     url = StringField('URL', validators=[DataRequired(), URL(require_tld=True, message='Invalid URL.')])
     name = StringField('Optional Name')
     submit = SubmitField('Add URL')
+
+class DeleteURLForm(FlaskForm):
+    """Empty form just for CSRF protection."""
+    submit = SubmitField('Delete')
+
+class RunFullScanForm(FlaskForm):
+    """Empty form just for CSRF protection."""
+    submit = SubmitField('Run Full Scan')

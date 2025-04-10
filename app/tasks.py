@@ -5,8 +5,10 @@ from datetime import datetime, timezone
 from app import app, db # Import app for logger
 from app.models import MonitoredURL, MonitoringLog
 from app.checks import run_advanced_checks_for_url
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Dict, Any, Optional, Tuple
 
-def check_url(url_to_check: MonitoredURL):
+def check_url(url_to_check: MonitoredURL) -> MonitoringLog:
     """Checks a single URL status/response and returns a MonitoringLog object."""
     log = MonitoringLog(monitored_url_id=url_to_check.id)
     try:
@@ -34,6 +36,51 @@ def check_url(url_to_check: MonitoredURL):
 
     log.timestamp = datetime.now(timezone.utc)
     return log
+
+def check_url_batch(url_obj: MonitoredURL) -> Tuple[MonitoredURL, Optional[MonitoringLog]]:
+    """Wrapper function for batch processing that returns both the URL object and its log."""
+    try:
+        log = check_url(url_obj)
+        return url_obj, log
+    except Exception as e:
+        app.logger.error(f"Error checking URL {url_obj.url} (ID: {url_obj.id}): {e}", exc_info=True)
+        return url_obj, None
+
+def run_batch_url_checks(max_workers: int = 5):
+    """Task function to check all URLs in batches using a thread pool."""
+    with app.app_context():
+        # Get all URLs to check
+        urls = db.session.scalars(sa.select(MonitoredURL)).all()
+        if not urls:
+            app.logger.debug("No URLs found for batch check.")
+            return
+        
+        app.logger.info(f"Starting batch check for {len(urls)} URLs with {max_workers} workers")
+        results = []
+        
+        # Use ThreadPoolExecutor to check URLs in parallel
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all URL checks to the thread pool
+            future_to_url = {executor.submit(check_url_batch, url): url for url in urls}
+            
+            # Process results as they complete
+            for future in future_to_url:
+                try:
+                    url_obj, log = future.result()
+                    if log:
+                        results.append(log)
+                except Exception as e:
+                    app.logger.error(f"Exception processing URL check result: {e}", exc_info=True)
+        
+        # Save all logs in a single transaction
+        if results:
+            try:
+                db.session.add_all(results)
+                db.session.commit()
+                app.logger.info(f"Saved {len(results)} logs from batch check")
+            except Exception as e:
+                app.logger.error(f"Failed to commit logs from batch check: {e}", exc_info=True)
+                db.session.rollback()
 
 def run_single_url_check(url_id: int):
     """Task function to check a single URL and save the log."""

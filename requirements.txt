@@ -12,3 +12,4 @@ ipwhois
 dnspython
 APScheduler
 WeasyPrint
+tldextract

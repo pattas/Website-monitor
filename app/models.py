@@ -41,7 +41,8 @@ class MonitoredURL(db.Model):
     # Fields for advanced checks
     ssl_expiry_date: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True)
     domain_expiry_date: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True)
-    last_advanced_check: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True)
+    last_advanced_check: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True) # Timestamp of the last attempt
+    last_successful_advanced_check: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True) # Timestamp of last success
     last_full_scan: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True)
 
     # Fields to store last full scan results

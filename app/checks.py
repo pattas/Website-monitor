@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from app import app # Import app for logger
 from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse
+import tldextract # Import tldextract
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from ipwhois import IPWhois
@@ -75,9 +76,10 @@ def run_advanced_checks_for_url(url_obj):
     updated = False
     parsed_url = urlparse(url_obj.url)
     hostname = parsed_url.netloc
-    # Basic domain extraction - might fail for complex TLDs like .co.uk
-    parts = hostname.split('.')
-    domain = '.'.join(parts[-2:]) if len(parts) >= 2 else hostname
+    # Use tldextract for robust domain extraction
+    extracted = tldextract.extract(url_obj.url)
+    # Combine domain and suffix for WHOIS lookup (e.g., 'google.com', 'bbc.co.uk')
+    domain = f"{extracted.domain}.{extracted.suffix}" if extracted.domain and extracted.suffix else hostname
 
     # --- Check SSL Expiry (only for https) ---
     new_ssl_expiry = None

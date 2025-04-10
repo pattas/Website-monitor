@@ -3,7 +3,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db, scheduler # Import app for logger
 from app import tasks # Import tasks module
-from app.forms import LoginForm, RegistrationForm, AddURLForm
+from app.forms import LoginForm, RegistrationForm, AddURLForm, DeleteURLForm, RunFullScanForm
 from app.models import User, MonitoredURL, MonitoringLog
 from urllib.parse import urlsplit, urlparse
 from apscheduler.jobstores.base import JobLookupError # Import JobLookupError
@@ -12,6 +12,125 @@ from sqlalchemy import desc
 from app.checks import run_advanced_checks_for_url, get_ip_address, get_rdap_info, get_dns_records, run_traceroute
 import json # For pretty printing RDAP
 from weasyprint import HTML, CSS # Import WeasyPrint
+
+
+# --- Helper Functions ---
+
+def _calculate_uptime_stats(url_id: int, start_time: datetime):
+    """Helper function to calculate uptime percentage, success count, and total count."""
+    logs_in_period = db.session.scalars(
+        sa.select(MonitoringLog)
+        .where(
+            MonitoringLog.monitored_url_id == url_id,
+            MonitoringLog.timestamp >= start_time
+        )
+    ).all()
+
+    total_checks = len(logs_in_period)
+    successful_checks = 0
+    for log in logs_in_period:
+        # Consider successful if status code is 2xx
+        if log.status_code and log.status_code >= 200 and log.status_code < 300:
+            successful_checks += 1
+
+    uptime_percentage = (successful_checks / total_checks * 100) if total_checks > 0 else 100.0 # Assume 100% if no checks?
+    return uptime_percentage, successful_checks, total_checks
+
+def _get_url_details_context(url_id: int, url_obj: MonitoredURL = None):
+    """Helper function to fetch and prepare context data for the url_details template."""
+    if url_obj is None:
+        url_obj = db.session.get(MonitoredURL, url_id)
+        if url_obj is None:
+            return None # Indicate URL not found
+
+    # Fetch latest log for current status
+    latest_log = db.session.scalars(
+        sa.select(MonitoringLog)
+        .where(MonitoringLog.monitored_url_id == url_id)
+        .order_by(MonitoringLog.timestamp.desc())
+        .limit(1)
+    ).first()
+
+    # Determine current status string
+    current_status = "UNKNOWN"
+    if latest_log:
+        if latest_log.status_code and latest_log.status_code >= 200 and latest_log.status_code < 300:
+            current_status = "OK"
+        elif latest_log.status_code:
+            current_status = "WARN"
+        else:
+            current_status = "ERROR"
+
+    # --- Uptime Calculation ---
+    now = datetime.now(timezone.utc)
+    time_24h_ago = now - timedelta(hours=24)
+    time_7d_ago = now - timedelta(days=7)
+    uptime_24h, successful_checks_24h, total_checks_24h = _calculate_uptime_stats(url_id, time_24h_ago)
+    uptime_7d, successful_checks_7d, total_checks_7d = _calculate_uptime_stats(url_id, time_7d_ago)
+
+    # --- Fetch Recent History ---
+    history_logs = db.session.scalars(
+        sa.select(MonitoringLog)
+        .where(MonitoringLog.monitored_url_id == url_id)
+        .order_by(MonitoringLog.timestamp.desc())
+        .limit(50) # Limit the number of history logs displayed
+    ).all()
+
+    # --- Prepare Scan Results ---
+    scan_results_dict = None
+    if url_obj.last_full_scan:
+        try:
+            dns_data = json.loads(url_obj.last_scan_dns) if url_obj.last_scan_dns else None
+        except json.JSONDecodeError:
+            app.logger.warning(f"Failed to parse stored DNS JSON for URL ID {url_id}")
+            dns_data = {"error": "Failed to parse stored data"}
+
+        try:
+            # Also parse RDAP data if available
+            # Pass the raw JSON string directly to the template.
+            # The <pre> tag will handle displaying it.
+            # No need to parse it here.
+            rdap_data_string = url_obj.last_scan_rdap
+        except Exception as e:
+             # Catch potential errors reading the attribute, though unlikely
+             app.logger.error(f"Error accessing RDAP data string for URL ID {url_id}: {e}")
+             rdap_data_string = 'Error retrieving stored RDAP data.'
+
+
+        scan_results_dict = {
+            'ip_address': url_obj.last_scan_ip,
+            'rdap': rdap_data_string, # Pass the raw string
+            'dns': dns_data, # Keep DNS parsed for potential iteration in template if needed elsewhere
+            'traceroute': url_obj.last_scan_traceroute
+        }
+
+    return {
+        'title': f"Details for {url_obj.name or url_obj.url}",
+        'url': url_obj,
+        'latest_log': latest_log,
+        'current_status': current_status,
+        'uptime_24h': uptime_24h,
+        'successful_checks_24h': successful_checks_24h,
+        'total_checks_24h': total_checks_24h,
+        'uptime_7d': uptime_7d,
+        'successful_checks_7d': successful_checks_7d,
+        'total_checks_7d': total_checks_7d,
+        'history_logs': history_logs,
+        'scan_results': scan_results_dict
+    }
+
+# Helper function to safely parse stored JSON
+def parse_json_string(json_string, logger):
+    if not json_string:
+        return None
+    try:
+        return json.loads(json_string)
+    except json.JSONDecodeError:
+        logger.warning(f"Failed to parse stored JSON: {json_string[:100]}..." ) # Log snippet
+        return None # Or return the raw string if preferred
+
+
+# --- Routes ---
 
 @app.route('/')
 @app.route('/index')
@@ -65,8 +184,9 @@ def dashboard():
     urls_query = sa.select(MonitoredURL).where(MonitoredURL.user_id == current_user.id).order_by(MonitoredURL.added_at.desc())
     user_urls = db.session.scalars(urls_query).all()
 
-    # Fetch the latest log for each URL to display status
+    # Fetch the latest log for each URL to display status and create delete forms
     urls_with_status = []
+    delete_forms = {}
     for url in user_urls:
         latest_log = db.session.scalars(
             sa.select(MonitoringLog)
@@ -75,8 +195,10 @@ def dashboard():
             .limit(1)
         ).first()
         urls_with_status.append({'url': url, 'latest_log': latest_log})
+        delete_forms[url.id] = DeleteURLForm(prefix=f"delete_{url.id}")
 
-    return render_template('dashboard.html', title='Dashboard', form=form, urls_with_status=urls_with_status)
+    return render_template('dashboard.html', title='Dashboard', form=form, 
+                          urls_with_status=urls_with_status, delete_forms=delete_forms)
 
 @app.route('/add_url', methods=['POST'])
 @login_required
@@ -93,25 +215,14 @@ def add_url():
             db.session.add(new_url)
             db.session.commit() # Commit to get the new_url.id
 
-            # Schedule jobs for the new URL
+            # Schedule advanced check jobs for the new URL
+            # (Standard checks are handled by the batch job)
             try:
-                job_id_standard = f'check_url_{new_url.id}'
-                scheduler.add_job(
-                    func=tasks.run_single_url_check,
-                    trigger='interval',
-                    seconds=5, # Changed from minutes=5
-                    id=job_id_standard,
-                    args=[new_url.id],
-                    replace_existing=True,
-                    misfire_grace_time=60
-                )
-                app.logger.info(f"Scheduled standard check for new URL {new_url.url} (ID: {new_url.id})")
-
                 job_id_advanced = f'advanced_check_url_{new_url.id}'
                 scheduler.add_job(
                     func=tasks.run_single_url_advanced_check,
                     trigger='interval',
-                    hours=24, # Match interval in __init__
+                    hours=app.config['ADVANCED_CHECK_INTERVAL_HOURS'], # Use config value
                     id=job_id_advanced,
                     args=[new_url.id],
                     replace_existing=True,
@@ -129,6 +240,10 @@ def add_url():
                 )
                 app.logger.info(f"Scheduled initial immediate advanced check for new URL {new_url.url} (ID: {new_url.id})")
 
+                # Also run an immediate standard check
+                tasks.run_single_url_check(new_url.id)
+                app.logger.info(f"Executed immediate standard check for new URL {new_url.url} (ID: {new_url.id})")
+
                 flash('URL added and monitoring scheduled successfully!')
             except Exception as e:
                 app.logger.error(f"Error scheduling jobs for new URL {new_url.id}: {e}", exc_info=True)
@@ -140,7 +255,7 @@ def add_url():
                  flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
     return redirect(url_for('dashboard'))
 
-@app.route('/delete_url/<int:url_id>', methods=['GET', 'POST']) # GET for simplicity, POST recommended for deletion
+@app.route('/delete_url/<int:url_id>', methods=['POST']) # Changed to POST only
 @login_required
 def delete_url(url_id):
     url_to_delete = db.session.get(MonitoredURL, url_id)
@@ -152,16 +267,8 @@ def delete_url(url_id):
         return redirect(url_for('dashboard'))
 
     # Remove scheduled jobs before deleting the URL
-    job_id_standard = f'check_url_{url_id}'
+    # Only need to remove advanced check jobs since standard checks are handled by batch job
     job_id_advanced = f'advanced_check_url_{url_id}'
-    try:
-        scheduler.remove_job(job_id_standard)
-        app.logger.info(f"Removed standard check job {job_id_standard} for URL ID {url_id}")
-    except JobLookupError:
-        app.logger.warning(f"Standard check job {job_id_standard} not found for URL ID {url_id}, skipping removal.")
-    except Exception as e:
-        app.logger.error(f"Error removing job {job_id_standard} for URL ID {url_id}: {e}", exc_info=True)
-        flash('Error removing standard monitoring task. Please check logs.', 'warning')
 
     try:
         scheduler.remove_job(job_id_advanced)
@@ -199,91 +306,25 @@ def delete_url(url_id):
 @app.route('/url_details/<int:url_id>')
 @login_required
 def view_url_details(url_id):
-    # Fetch URL and ensure ownership
-    url = db.session.get(MonitoredURL, url_id)
-    if url is None or url.owner != current_user:
+    # Fetch URL and ensure ownership first
+    url_obj = db.session.get(MonitoredURL, url_id)
+    if url_obj is None or url_obj.owner != current_user:
         flash('URL not found or you do not have permission to view it.', 'warning')
         return redirect(url_for('dashboard'))
 
-    # Fetch latest log for current status
-    latest_log = db.session.scalars(
-        sa.select(MonitoringLog)
-        .where(MonitoringLog.monitored_url_id == url.id)
-        .order_by(MonitoringLog.timestamp.desc())
-        .limit(1)
-    ).first()
+    # Get context data using the helper function
+    context = _get_url_details_context(url_id, url_obj)
+    if context is None: # Should not happen if initial check passed, but good practice
+        flash('URL not found.', 'warning')
+        return redirect(url_for('dashboard'))
 
-    # Determine current status string
-    current_status = "UNKNOWN"
-    if latest_log:
-        if latest_log.status_code and latest_log.status_code >= 200 and latest_log.status_code < 300:
-            current_status = "OK"
-        elif latest_log.status_code:
-            current_status = "WARN"
-        else:
-            current_status = "ERROR"
+    # Instantiate the form for the "Run Full Scan" button
+    run_scan_form = RunFullScanForm()
 
-    # --- Uptime Calculation ---
-    # Define time thresholds
-    now = datetime.now(timezone.utc)
-    time_24h_ago = now - timedelta(hours=24)
-    time_7d_ago = now - timedelta(days=7)
+    # Add the form to the context
+    context['run_scan_form'] = run_scan_form
 
-    # Helper function to calculate uptime
-    def calculate_uptime(start_time):
-        logs_in_period = db.session.scalars(
-            sa.select(MonitoringLog)
-            .where(
-                MonitoringLog.monitored_url_id == url_id,
-                MonitoringLog.timestamp >= start_time
-            )
-        ).all()
-
-        total_checks = len(logs_in_period)
-        successful_checks = 0
-        for log in logs_in_period:
-            # Consider successful if status code is 2xx
-            if log.status_code and log.status_code >= 200 and log.status_code < 300:
-                successful_checks += 1
-
-        uptime_percentage = (successful_checks / total_checks * 100) if total_checks > 0 else 100.0 # Assume 100% if no checks?
-        return uptime_percentage, successful_checks, total_checks
-
-    # Calculate uptime for 24h and 7d
-    uptime_24h, successful_checks_24h, total_checks_24h = calculate_uptime(time_24h_ago)
-    uptime_7d, successful_checks_7d, total_checks_7d = calculate_uptime(time_7d_ago)
-
-    # --- Fetch Recent History --- (e.g., last 50 logs)
-    history_logs = db.session.scalars(
-        sa.select(MonitoringLog)
-        .where(MonitoringLog.monitored_url_id == url.id)
-        .order_by(MonitoringLog.timestamp.desc())
-        .limit(50) # Limit the number of history logs displayed
-    ).all()
-
-    return render_template(
-        'url_details.html',
-        title=f"Details for {url.name or url.url}",
-        url=url,
-        latest_log=latest_log,
-        current_status=current_status,
-        uptime_24h=uptime_24h,
-        successful_checks_24h=successful_checks_24h,
-        total_checks_24h=total_checks_24h,
-        uptime_7d=uptime_7d,
-        successful_checks_7d=successful_checks_7d,
-        total_checks_7d=total_checks_7d,
-        history_logs=history_logs,
-        # Pass the stored scan results to the template
-        # The template already has logic to display scan_results if they exist
-        # We just need to construct a similar dictionary from the stored fields
-        scan_results={
-            'ip_address': url.last_scan_ip,
-            'rdap': url.last_scan_rdap, # Already stored as string
-            'dns': json.loads(url.last_scan_dns) if url.last_scan_dns else None, # Parse DNS JSON
-            'traceroute': url.last_scan_traceroute
-        } if url.last_full_scan else None # Only pass if a scan has been run
-    )
+    return render_template('url_details.html', **context)
 
 @app.route('/api/monitoring_data')
 @login_required
@@ -406,9 +447,9 @@ def trigger_advanced_check(url_id):
         return redirect(url_for('dashboard'))
 
     now = datetime.now(timezone.utc)
-    # Check if last check was recent (e.g., within 23 hours)
-    if url.last_advanced_check and (now.replace(tzinfo=None) - url.last_advanced_check) < timedelta(hours=23):
-        time_since_last = now.replace(tzinfo=None) - url.last_advanced_check
+    # Check if last check was recent (e.g., within 23 hours) - Compare aware times
+    if url.last_advanced_check and (now - url.last_advanced_check) < timedelta(hours=23):
+        time_since_last = now - url.last_advanced_check
         hours_since = time_since_last.total_seconds() / 3600
         flash(f'Advanced check already run recently ({hours_since:.1f} hours ago). Please wait.', 'warning')
         return redirect(url_for('view_url_details', url_id=url_id))
@@ -422,7 +463,7 @@ def trigger_advanced_check(url_id):
         else:
              # If updated is False, it means either the check failed or the data didn't change
              # We still update last_advanced_check time if the check itself ran without fundamental errors
-             if url.last_advanced_check is None or (now.replace(tzinfo=None) - url.last_advanced_check) > timedelta(minutes=5):
+             if url.last_advanced_check is None or (now - url.last_advanced_check) > timedelta(minutes=5):
                  url.last_advanced_check = now
                  db.session.commit()
              flash('Advanced check completed. No changes detected or check failed (see logs).', 'info')
@@ -444,9 +485,9 @@ def run_full_scan(url_id):
         return redirect(url_for('dashboard'))
 
     now = datetime.now(timezone.utc)
-    # Enforce 24-hour limit for the full scan
-    if url.last_full_scan and (now.replace(tzinfo=None) - url.last_full_scan) < timedelta(hours=23):
-        time_since_last = now.replace(tzinfo=None) - url.last_full_scan
+    # Enforce 24-hour limit for the full scan - Compare aware times
+    if url.last_full_scan and (now - url.last_full_scan) < timedelta(hours=23):
+        time_since_last = now - url.last_full_scan
         hours_since = time_since_last.total_seconds() / 3600
         flash(f'Full scan already run recently ({hours_since:.1f} hours ago). Please wait.', 'warning')
         return redirect(url_for('view_url_details', url_id=url_id))
@@ -488,46 +529,19 @@ def run_full_scan(url_id):
         app.logger.info(f"Full scan completed successfully for {url.url} (ID: {url_id}) and results saved.")
         flash('Full scan completed and results saved!', 'success')
 
-        # --- Re-render Detail Page with Scan Results --- #
-        # We need to fetch all other data again, similar to view_url_details
-        # This avoids storing potentially large results in the session or database
+        # --- Re-render Detail Page with Scan Results using Helper ---
+        # Fetch the updated context using the helper function
+        # Pass the already fetched url object to avoid another query
+        context = _get_url_details_context(url_id, url)
+        if context is None:
+             flash('Error retrieving URL details after scan.', 'danger')
+             return redirect(url_for('dashboard'))
 
-        latest_log = db.session.scalars(sa.select(MonitoringLog).where(MonitoringLog.monitored_url_id == url.id).order_by(MonitoringLog.timestamp.desc()).limit(1)).first()
-        current_status = "UNKNOWN"
-        if latest_log:
-            if latest_log.status_code and latest_log.status_code >= 200 and latest_log.status_code < 300: current_status = "OK"
-            elif latest_log.status_code: current_status = "WARN"
-            else: current_status = "ERROR"
+        # Update the scan_results in the context with the *just* completed scan
+        # This ensures the latest data is shown immediately without relying on the DB read in the helper
+        context['scan_results'] = scan_results
 
-        time_24h_ago = now - timedelta(hours=24)
-        time_7d_ago = now - timedelta(days=7)
-
-        def calculate_uptime(start_time):
-            # Simplified for brevity - ideally refactor this too
-            logs = db.session.scalars(sa.select(MonitoringLog).where(MonitoringLog.monitored_url_id == url_id, MonitoringLog.timestamp >= start_time)).all()
-            total = len(logs)
-            success = sum(1 for log in logs if log.status_code and 200 <= log.status_code < 300)
-            return (success / total * 100) if total > 0 else 100.0, success, total
-
-        uptime_24h, s24, t24 = calculate_uptime(time_24h_ago)
-        uptime_7d, s7, t7 = calculate_uptime(time_7d_ago)
-        history_logs = db.session.scalars(sa.select(MonitoringLog).where(MonitoringLog.monitored_url_id == url.id).order_by(MonitoringLog.timestamp.desc()).limit(50)).all()
-
-        return render_template(
-            'url_details.html',
-            title=f"Details for {url.name or url.url}",
-            url=url,
-            latest_log=latest_log,
-            current_status=current_status,
-            uptime_24h=uptime_24h,
-            successful_checks_24h=s24,
-            total_checks_24h=t24,
-            uptime_7d=uptime_7d,
-            successful_checks_7d=s7,
-            total_checks_7d=t7,
-            history_logs=history_logs,
-            scan_results=scan_results # Pass the new scan results
-        )
+        return render_template('url_details.html', **context)
 
     except Exception as e:
         db.session.rollback() # Rollback timestamp update if scan fails badly
@@ -562,34 +576,14 @@ def export_url_details_pdf(url_id):
     now = datetime.now(timezone.utc)
     time_24h_ago = now - timedelta(hours=24)
     time_7d_ago = now - timedelta(days=7)
-    def calculate_uptime(start_time):
-        logs_in_period = db.session.scalars(
-            sa.select(MonitoringLog)
-            .where(
-                MonitoringLog.monitored_url_id == url_id,
-                MonitoringLog.timestamp >= start_time
-            )
-        ).all()
-        total_checks = len(logs_in_period)
-        successful_checks = sum(1 for log in logs_in_period if log.status_code and 200 <= log.status_code < 300)
-        uptime_percentage = (successful_checks / total_checks * 100) if total_checks > 0 else 100.0
-        return uptime_percentage, successful_checks, total_checks
-    uptime_24h, successful_checks_24h, total_checks_24h = calculate_uptime(time_24h_ago)
-    uptime_7d, successful_checks_7d, total_checks_7d = calculate_uptime(time_7d_ago)
 
-    # Helper function to safely parse stored JSON
-    def parse_json_string(json_string):
-        if not json_string:
-            return None
-        try:
-            return json.loads(json_string)
-        except json.JSONDecodeError:
-            app.logger.warning(f"Failed to parse stored JSON: {json_string}")
-            return None # Or return the raw string if preferred
+    # Use helper function for uptime
+    uptime_24h, successful_checks_24h, total_checks_24h = _calculate_uptime_stats(url_id, time_24h_ago)
+    uptime_7d, successful_checks_7d, total_checks_7d = _calculate_uptime_stats(url_id, time_7d_ago)
 
-    # Fetch stored scan results
-    last_scan_rdap_data = parse_json_string(url.last_scan_rdap)
-    last_scan_dns_data = parse_json_string(url.last_scan_dns)
+    # Use the module-level helper function
+    last_scan_rdap_data = parse_json_string(url.last_scan_rdap, app.logger)
+    last_scan_dns_data = parse_json_string(url.last_scan_dns, app.logger)
 
     # Render an HTML template specifically designed for PDF output
     html_string = render_template(

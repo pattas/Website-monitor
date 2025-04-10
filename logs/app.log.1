@@ -1,35 +1,8 @@
-2025-04-10 11:56:39,858 INFO: Starting advanced check task for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
-2025-04-10 11:56:41,773 INFO: Advanced check task for URL ID 3: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
-2025-04-10 11:56:48,026 INFO: Starting full scan for https://awesome.com (ID: 3) by user patrik [in /home/patrik/Documents/work/WEB-test/app/routes.py:451]
-2025-04-10 11:56:49,754 ERROR: Traceroute command 'traceroute' not found for hostname awesome.com. [in /home/patrik/Documents/work/WEB-test/app/checks.py:183]
-2025-04-10 11:56:49,777 INFO: Full scan completed successfully for https://awesome.com (ID: 3) and results saved. [in /home/patrik/Documents/work/WEB-test/app/routes.py:479]
-2025-04-10 11:59:39,103 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:74]
-2025-04-10 11:59:39,109 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:151]
-2025-04-10 11:59:39,109 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:78]
-2025-04-10 11:59:39,129 INFO: Found 3 URLs in the database for initial scheduling. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:83]
-2025-04-10 11:59:39,172 INFO: Scheduled initial immediate advanced check job 'advanced_check_url_3_initial' for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/__init__.py:139]
-2025-04-10 11:59:39,174 INFO: Starting advanced check task for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
-2025-04-10 11:59:40,550 INFO: Advanced check task for URL ID 3: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
-2025-04-10 11:59:52,328 ERROR: Exception on /url_details/1 [GET] [in /var/data/python/lib/python3.12/site-packages/flask/app.py:875]
+2025-04-10 18:05:04,796 ERROR: Error during full scan execution for URL ID 3: 'run_scan_form' is undefined [in /home/patrik/Documents/work/WEB-test/app/routes.py:544]
 Traceback (most recent call last):
-  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 1511, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 919, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 902, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "/home/patrik/Documents/work/WEB-test/app/routes.py", line 540, in run_full_scan
+    return render_template('url_details.html', **context)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/patrik/Documents/work/WEB-test/app/routes.py", line 264, in view_url_details
-    return render_template(
-           ^^^^^^^^^^^^^^^^
   File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
     return _render(app, template, context)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -45,47 +18,97 @@ Traceback (most recent call last):
   File "/home/patrik/Documents/work/WEB-test/templates/base.html", line 53, in top-level template code
     {% block app_content %}{% endblock %}
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/patrik/Documents/work/WEB-test/templates/url_details.html", line 133, in block 'app_content'
-    {% for type, records in scan_results.dns.items() %}
+  File "/home/patrik/Documents/work/WEB-test/templates/url_details.html", line 23, in block 'app_content'
+    {{ run_scan_form.hidden_tag() }}
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/jinja2/utils.py", line 92, in from_obj
-    if hasattr(obj, "jinja_pass_arg"):
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.UndefinedError: 'None' has no attribute 'items'
-2025-04-10 11:59:58,560 WARNING: Standard check job check_url_1 not found for URL ID 1, skipping removal. [in /home/patrik/Documents/work/WEB-test/app/routes.py:161]
-2025-04-10 11:59:58,564 WARNING: Recurring advanced check job advanced_check_url_1 not found for URL ID 1, skipping removal. [in /home/patrik/Documents/work/WEB-test/app/routes.py:170]
-2025-04-10 12:00:01,100 INFO: Removed standard check job check_url_2 for URL ID 2 [in /home/patrik/Documents/work/WEB-test/app/routes.py:159]
-2025-04-10 12:00:01,112 INFO: Removed advanced check job advanced_check_url_2 for URL ID 2 [in /home/patrik/Documents/work/WEB-test/app/routes.py:168]
-2025-04-10 12:00:05,639 INFO: Removed standard check job check_url_3 for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/routes.py:159]
-2025-04-10 12:00:05,651 INFO: Removed advanced check job advanced_check_url_3 for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/routes.py:168]
-2025-04-10 12:00:08,714 INFO: Scheduled standard check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:108]
-2025-04-10 12:00:08,726 INFO: Scheduled recurring advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:120]
-2025-04-10 12:00:08,747 INFO: Scheduled initial immediate advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:130]
-2025-04-10 12:00:08,752 INFO: Starting advanced check task for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
-2025-04-10 12:00:13,406 INFO: Scheduled standard check for new URL https://gmail.com (ID: 2) [in /home/patrik/Documents/work/WEB-test/app/routes.py:108]
-2025-04-10 12:00:13,419 INFO: Scheduled recurring advanced check for new URL https://gmail.com (ID: 2) [in /home/patrik/Documents/work/WEB-test/app/routes.py:120]
-2025-04-10 12:00:13,430 INFO: Scheduled initial immediate advanced check for new URL https://gmail.com (ID: 2) [in /home/patrik/Documents/work/WEB-test/app/routes.py:130]
-2025-04-10 12:00:13,432 INFO: Starting advanced check task for URL ID 2 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
-2025-04-10 12:00:14,450 INFO: Advanced check task for URL ID 2: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
-2025-04-10 12:00:17,161 INFO: Scheduled standard check for new URL https://awesome.com (ID: 3) [in /home/patrik/Documents/work/WEB-test/app/routes.py:108]
-2025-04-10 12:00:17,173 INFO: Scheduled recurring advanced check for new URL https://awesome.com (ID: 3) [in /home/patrik/Documents/work/WEB-test/app/routes.py:120]
-2025-04-10 12:00:17,186 INFO: Scheduled initial immediate advanced check for new URL https://awesome.com (ID: 3) [in /home/patrik/Documents/work/WEB-test/app/routes.py:130]
-2025-04-10 12:00:17,189 INFO: Starting advanced check task for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
-2025-04-10 12:00:18,603 INFO: Advanced check task for URL ID 3: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
-2025-04-10 12:00:19,469 INFO: Advanced check task for URL ID 1: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
-2025-04-10 12:00:21,565 INFO: Starting full scan for https://clipron.com (ID: 1) by user patrik [in /home/patrik/Documents/work/WEB-test/app/routes.py:460]
-2025-04-10 12:00:22,993 ERROR: Traceroute command 'traceroute' not found for hostname clipron.com. [in /home/patrik/Documents/work/WEB-test/app/checks.py:183]
-2025-04-10 12:00:23,011 INFO: Full scan completed successfully for https://clipron.com (ID: 1) and results saved. [in /home/patrik/Documents/work/WEB-test/app/routes.py:488]
-2025-04-10 12:30:21,615 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:74]
-2025-04-10 12:30:21,619 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:151]
-2025-04-10 12:30:21,620 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:78]
-2025-04-10 12:30:21,636 INFO: Found 3 URLs in the database for initial scheduling. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:83]
-2025-04-10 12:30:21,736 INFO: Scheduled initial immediate advanced check job 'advanced_check_url_3_initial' for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/__init__.py:139]
-2025-04-10 12:30:21,742 INFO: Starting advanced check task for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
-2025-04-10 12:30:23,465 INFO: Advanced check task for URL ID 3: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
-2025-04-10 12:30:47,682 INFO: Removed standard check job check_url_1 for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/routes.py:159]
-2025-04-10 12:30:47,693 INFO: Removed advanced check job advanced_check_url_1 for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/routes.py:168]
-2025-04-10 12:30:51,550 INFO: Scheduled standard check for new URL https://clipron.com (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:108]
-2025-04-10 12:30:51,564 INFO: Scheduled recurring advanced check for new URL https://clipron.com (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:120]
-2025-04-10 12:30:51,576 INFO: Scheduled initial immediate advanced check for new URL https://clipron.com (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:130]
-2025-04-10 12:30:51,580 INFO: Starting advanced check task for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'run_scan_form' is undefined
+2025-04-10 18:05:20,491 INFO: Scheduled recurring advanced check for new URL https://seznam.cz (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:227]
+2025-04-10 18:05:20,503 INFO: Scheduled initial immediate advanced check for new URL https://seznam.cz (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:237]
+2025-04-10 18:05:20,507 INFO: Starting advanced check task for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:105]
+2025-04-10 18:05:20,814 INFO: Executed immediate standard check for new URL https://seznam.cz (ID: 4) [in /home/patrik/Documents/work/WEB-test/app/routes.py:241]
+2025-04-10 18:05:21,255 INFO: Advanced check task for URL ID 4: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:125]
+2025-04-10 18:05:25,734 INFO: Starting full scan for https://seznam.cz (ID: 4) by user patrik [in /home/patrik/Documents/work/WEB-test/app/routes.py:497]
+2025-04-10 18:05:26,374 ERROR: Command '/usr/bin/tcptraceroute' could not be executed (FileNotFoundError) for hostname seznam.cz. [in /home/patrik/Documents/work/WEB-test/app/checks.py:202]
+2025-04-10 18:05:26,392 INFO: Full scan completed successfully for https://seznam.cz (ID: 4) and results saved. [in /home/patrik/Documents/work/WEB-test/app/routes.py:525]
+2025-04-10 18:05:26,396 ERROR: Error during full scan execution for URL ID 4: 'run_scan_form' is undefined [in /home/patrik/Documents/work/WEB-test/app/routes.py:544]
+Traceback (most recent call last):
+  File "/home/patrik/Documents/work/WEB-test/app/routes.py", line 540, in run_full_scan
+    return render_template('url_details.html', **context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/patrik/Documents/work/WEB-test/templates/url_details.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/patrik/Documents/work/WEB-test/templates/base.html", line 53, in top-level template code
+    {% block app_content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/patrik/Documents/work/WEB-test/templates/url_details.html", line 23, in block 'app_content'
+    {{ run_scan_form.hidden_tag() }}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'run_scan_form' is undefined
+2025-04-10 18:05:38,388 INFO: Starting batch check for 4 URLs with 10 workers [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 18:05:38,895 INFO: Saved 4 logs from batch check [in /home/patrik/Documents/work/WEB-test/app/tasks.py:80]
+2025-04-10 18:11:05,554 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:76]
+2025-04-10 18:11:05,560 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:149]
+2025-04-10 18:11:05,560 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:80]
+2025-04-10 18:11:05,577 INFO: Found 4 URLs in the database for initial scheduling. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:85]
+2025-04-10 18:11:05,598 INFO: Starting batch check for 4 URLs with 10 workers [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 18:11:06,200 INFO: Saved 4 logs from batch check [in /home/patrik/Documents/work/WEB-test/app/tasks.py:80]
+2025-04-10 18:11:17,427 INFO: Removed advanced check job advanced_check_url_4 for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/routes.py:271]
+2025-04-10 18:11:21,072 INFO: Removed advanced check job advanced_check_url_3 for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/routes.py:271]
+2025-04-10 18:11:25,380 INFO: Removed advanced check job advanced_check_url_2 for URL ID 2 [in /home/patrik/Documents/work/WEB-test/app/routes.py:271]
+2025-04-10 18:11:27,752 INFO: Removed advanced check job advanced_check_url_1 for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/routes.py:271]
+2025-04-10 18:11:32,456 INFO: Scheduled recurring advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:227]
+2025-04-10 18:11:32,469 INFO: Scheduled initial immediate advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:237]
+2025-04-10 18:11:32,474 INFO: Starting advanced check task for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:105]
+2025-04-10 18:11:32,619 INFO: Executed immediate standard check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:241]
+2025-04-10 18:11:38,387 INFO: Starting batch check for 1 URLs with 10 workers [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 18:11:38,536 INFO: Saved 1 logs from batch check [in /home/patrik/Documents/work/WEB-test/app/tasks.py:80]
+2025-04-10 18:11:43,480 INFO: Advanced check task for URL ID 1: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:125]
+2025-04-10 18:11:45,698 INFO: Starting full scan for https://clipron.com (ID: 1) by user patrik [in /home/patrik/Documents/work/WEB-test/app/routes.py:497]
+2025-04-10 18:11:46,828 ERROR: Command '/usr/bin/tcptraceroute' could not be executed (FileNotFoundError) for hostname clipron.com. [in /home/patrik/Documents/work/WEB-test/app/checks.py:202]
+2025-04-10 18:11:46,844 INFO: Full scan completed successfully for https://clipron.com (ID: 1) and results saved. [in /home/patrik/Documents/work/WEB-test/app/routes.py:525]
+2025-04-10 18:11:46,849 ERROR: Error during full scan execution for URL ID 1: 'run_scan_form' is undefined [in /home/patrik/Documents/work/WEB-test/app/routes.py:544]
+Traceback (most recent call last):
+  File "/home/patrik/Documents/work/WEB-test/app/routes.py", line 540, in run_full_scan
+    return render_template('url_details.html', **context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/patrik/Documents/work/WEB-test/templates/url_details.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/patrik/Documents/work/WEB-test/templates/base.html", line 53, in top-level template code
+    {% block app_content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/patrik/Documents/work/WEB-test/templates/url_details.html", line 23, in block 'app_content'
+    {{ run_scan_form.hidden_tag() }}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'run_scan_form' is undefined
+2025-04-10 18:12:38,388 INFO: Starting batch check for 1 URLs with 10 workers [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 18:12:38,531 INFO: Saved 1 logs from batch check [in /home/patrik/Documents/work/WEB-test/app/tasks.py:80]
+2025-04-10 18:13:38,386 INFO: Starting batch check for 1 URLs with 10 workers [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]

@@ -1,5 +1,96 @@
-2025-04-10 17:49:11,033 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:80]
-2025-04-10 17:49:11,047 ERROR: Error during initial job scheduling: (sqlite3.OperationalError) no such table: monitored_url
+2025-04-10 17:44:29,904 ERROR: Exception on / [GET] [in /var/data/python/lib/python3.12/site-packages/flask/app.py:875]
+Traceback (most recent call last):
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 945, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such table: user
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask_login/utils.py", line 284, in decorated_view
+    elif not current_user.is_authenticated:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/werkzeug/local.py", line 318, in __get__
+    obj = instance._get_current_object()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/werkzeug/local.py", line 526, in _get_current_object
+    return get_name(local())
+                    ^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask_login/utils.py", line 25, in <lambda>
+    current_user = LocalProxy(lambda: _get_user())
+                                      ^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/flask_login/utils.py", line 370, in _get_user
+    current_app.login_manager._load_user()
+  File "/var/data/python/lib/python3.12/site-packages/flask_login/login_manager.py", line 364, in _load_user
+    user = self._user_callback(user_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/patrik/Documents/work/WEB-test/app/models.py", line 27, in load_user
+    return db.session.get(User, int(id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/scoping.py", line 1058, in get
+    return self._proxied.get(
+           ^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 3694, in get
+    return self._get_impl(
+           ^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 3874, in _get_impl
+    return db_load_fn(
+           ^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 694, in load_on_pk_identity
+    session.execute(
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 945, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: user
+[SQL: SELECT user.id AS user_id, user.username AS user_username, user.email AS user_email, user.password_hash AS user_password_hash 
+FROM user 
+WHERE user.id = ?]
+[parameters: (1,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-04-10 17:46:16,887 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:76]
+2025-04-10 17:46:16,891 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:149]
+2025-04-10 17:46:16,892 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:80]
+2025-04-10 17:46:16,906 ERROR: Error during initial job scheduling: (sqlite3.OperationalError) no such table: monitored_url
 [SQL: SELECT monitored_url.id, monitored_url.url, monitored_url.name, monitored_url.added_at, monitored_url.user_id, monitored_url.ssl_expiry_date, monitored_url.domain_expiry_date, monitored_url.last_advanced_check, monitored_url.last_successful_advanced_check, monitored_url.last_full_scan, monitored_url.last_scan_ip, monitored_url.last_scan_rdap, monitored_url.last_scan_dns, monitored_url.last_scan_traceroute 
 FROM monitored_url]
 (Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/patrik/Documents/work/WEB-test/app/__init__.py:144]
@@ -52,69 +143,5 @@ sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: monit
 [SQL: SELECT monitored_url.id, monitored_url.url, monitored_url.name, monitored_url.added_at, monitored_url.user_id, monitored_url.ssl_expiry_date, monitored_url.domain_expiry_date, monitored_url.last_advanced_check, monitored_url.last_successful_advanced_check, monitored_url.last_full_scan, monitored_url.last_scan_ip, monitored_url.last_scan_rdap, monitored_url.last_scan_dns, monitored_url.last_scan_traceroute 
 FROM monitored_url]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
-2025-04-10 17:49:21,484 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:76]
-2025-04-10 17:49:21,488 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:149]
-2025-04-10 17:49:21,490 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:80]
-2025-04-10 17:49:21,502 ERROR: Error during initial job scheduling: (sqlite3.OperationalError) no such table: monitored_url
-[SQL: SELECT monitored_url.id, monitored_url.url, monitored_url.name, monitored_url.added_at, monitored_url.user_id, monitored_url.ssl_expiry_date, monitored_url.domain_expiry_date, monitored_url.last_advanced_check, monitored_url.last_successful_advanced_check, monitored_url.last_full_scan, monitored_url.last_scan_ip, monitored_url.last_scan_rdap, monitored_url.last_scan_dns, monitored_url.last_scan_traceroute 
-FROM monitored_url]
-(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/patrik/Documents/work/WEB-test/app/__init__.py:144]
-Traceback (most recent call last):
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
-    self.dialect.do_execute(
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 945, in do_execute
-    cursor.execute(statement, parameters)
-sqlite3.OperationalError: no such table: monitored_url
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/patrik/Documents/work/WEB-test/app/__init__.py", line 84, in schedule_initial_jobs
-    urls = db.session.scalars(sa.select(models.MonitoredURL)).all()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/scoping.py", line 1906, in scalars
-    return self._proxied.scalars(
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2473, in scalars
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
-    return meth(
-           ^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
-    self.dialect.do_execute(
-  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 945, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: monitored_url
-[SQL: SELECT monitored_url.id, monitored_url.url, monitored_url.name, monitored_url.added_at, monitored_url.user_id, monitored_url.ssl_expiry_date, monitored_url.domain_expiry_date, monitored_url.last_advanced_check, monitored_url.last_successful_advanced_check, monitored_url.last_full_scan, monitored_url.last_scan_ip, monitored_url.last_scan_rdap, monitored_url.last_scan_dns, monitored_url.last_scan_traceroute 
-FROM monitored_url]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2025-04-10 17:49:38,341 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:76]
-2025-04-10 17:49:38,366 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:149]
-2025-04-10 17:49:38,366 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:80]
-2025-04-10 17:49:38,379 INFO: Found 0 URLs in the database for initial scheduling. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:85]
-2025-04-10 17:49:38,392 INFO: Scheduled batch check job 'batch_url_checks' for all URLs [in /home/patrik/Documents/work/WEB-test/app/__init__.py:99]
-2025-04-10 17:49:38,393 INFO: No URLs found to schedule advanced checks. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:105]
-2025-04-10 17:50:02,008 INFO: Scheduled recurring advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:209]
-2025-04-10 17:50:02,020 INFO: Scheduled initial immediate advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:219]
-2025-04-10 17:50:02,025 INFO: Starting advanced check task for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:105]
-2025-04-10 17:50:02,191 INFO: Executed immediate standard check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:223]
+2025-04-10 17:47:00,774 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:76]
+2025-04-10 17:47:00,779 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:149]

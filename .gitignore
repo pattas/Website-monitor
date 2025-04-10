@@ -15,6 +15,7 @@
         app.db
         *.sqlite
         *.sqlite3
+        instance/
 
         # Environment variables
         .env
@@ -32,3 +33,10 @@
         # OS generated files
         .DS_Store
         Thumbs.db
+
+        # Log files
+        logs/
+        *.log
+
+        # Backup files
+        *.orig

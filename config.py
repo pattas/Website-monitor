@@ -5,7 +5,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError("No SECRET_KEY set for Flask application. Please set it in the .env file.")
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -22,3 +24,7 @@ class Config:
         'max_instances': 3 # Max concurrent instances of a job
     }
     SCHEDULER_API_ENABLED = True # Optional: enables a Flask endpoint for scheduler info
+
+    # Monitoring Configuration
+    STANDARD_CHECK_INTERVAL_SECONDS = int(os.environ.get('STANDARD_CHECK_INTERVAL_SECONDS', 60)) # Default: 60 seconds
+    ADVANCED_CHECK_INTERVAL_HOURS = int(os.environ.get('ADVANCED_CHECK_INTERVAL_HOURS', 24)) # Default: 24 hours
