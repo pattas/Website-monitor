@@ -44,10 +44,13 @@ It's designed for web administrators, developers, or anyone who needs to keep an
 
 *(Please add your own screenshots here after setting up the project and uploading them to your repository. Example placeholders below)*
 
-*   `![Dashboard Screenshot](dashboard.png)`
-*   `![URL Details Screenshot](details.png)`
-*   `![Login Screenshot](login.png)`
-*   `![PDF Export Example](pdf_example.png)`
+*   ![image](https://github.com/user-attachments/assets/5e85ede8-0c3c-4089-84d0-9b6d1f874a69)
+ 
+*   ![image](https://github.com/user-attachments/assets/eb0b277c-19ec-4ad2-a52f-e0deae541f12)
+
+*   ![image](https://github.com/user-attachments/assets/b2c47c0e-cfc0-48a6-9f37-60744ef6ab31)
+
+*   ![image](https://github.com/user-attachments/assets/0a05a096-126e-495a-b7f7-8b6ed2956dcf)
 
 ## 🛠️ Technologies Used
 
