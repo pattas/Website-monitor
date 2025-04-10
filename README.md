@@ -42,8 +42,6 @@ It's designed for web administrators, developers, or anyone who needs to keep an
 
 ## 📸 Screenshots
 
-*(Please add your own screenshots here after setting up the project and uploading them to your repository. Example placeholders below)*
-
 *   ![image](https://github.com/user-attachments/assets/5e85ede8-0c3c-4089-84d0-9b6d1f874a69)
  
 *   ![image](https://github.com/user-attachments/assets/eb0b277c-19ec-4ad2-a52f-e0deae541f12)
