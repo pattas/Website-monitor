@@ -10,3 +10,5 @@ python-whois
 cryptography
 ipwhois
 dnspython
+APScheduler
+WeasyPrint

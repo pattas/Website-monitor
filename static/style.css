@@ -1,7 +1,36 @@
+/* CSS Variables */
+:root {
+  /* Color Palette */
+  --primary-color: #0d6efd; /* Standard Bootstrap Blue */
+  --primary-rgb: 13, 110, 253;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --text-color: #343a40;
+  --text-muted-color: #6c757d;
+  --border-color: #dee2e6;
+  --card-bg: #ffffff;
+  --card-header-bg: #f1f3f5;
+  --body-bg: #f8f9fa;
+
+  /* Typography */
+  --font-family-base: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-size-base: 1rem;
+  --line-height-base: 1.6;
+  --heading-font-weight: 600;
+}
+
 /* General Styling */
 body {
     padding-bottom: 60px; /* Add padding for footer */
-    background-color: #f8f9fa; /* Light background */
+    background-color: var(--body-bg); /* Light background */
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    color: var(--text-color);
 }
 
 /* Navbar Adjustments */
@@ -14,7 +43,7 @@ body {
 
 /* Main Content Area */
 main.container {
-    background-color: #ffffff;
+    background-color: var(--card-bg);
     padding: 2rem;
     border-radius: 0.5rem;
     box-shadow: 0 0 15px rgba(0,0,0,0.05);
@@ -25,27 +54,76 @@ main.container {
 /* Card Styling for Dashboard sections */
 .card {
     margin-bottom: 1.5rem;
-    border: none; /* Remove default border */
-    box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* Softer shadow */
-    transition: transform 0.2s ease-in-out;
+    border: 1px solid var(--border-color); /* Add a subtle border back */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Even softer shadow */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 .card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Slightly more pronounced shadow on hover */
     transform: translateY(-5px); /* Slight lift on hover */
 }
 
 .card-header {
-    background-color: #eef2f7; /* Lighter header */
-    font-weight: bold;
-    border-bottom: 1px solid #dee2e6;
+    background-color: var(--card-header-bg); /* Lighter header */
+    font-weight: var(--heading-font-weight); /* Use heading weight */
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.75rem 1.25rem; /* Adjust padding slightly */
 }
 
 /* List Group Styling */
 .card .list-group-flush .list-group-item {
-    background-color: #fff; /* Force white background for all items */
-    border-color: #e9ecef; /* Lighter borders */
+    background-color: var(--card-bg); /* Use card background */
+    border-color: var(--border-color); /* Lighter borders */
     /* list-group-flush handles border-top removal, we just ensure bottom border */
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--border-color);
     transition: background-color 0.2s ease;
+    padding-top: 1rem; /* Add more vertical padding */
+    padding-bottom: 1rem;
+    border-left: 4px solid transparent; /* Prepare for status border */
+}
+
+/* Status Indicator Styling */
+.list-group-item .fa-check-circle { color: var(--success-color); }
+.list-group-item .fa-exclamation-triangle { color: var(--warning-color); }
+.list-group-item .fa-times-circle { color: var(--danger-color); }
+.list-group-item .fa-question-circle { color: var(--secondary-color); }
+
+/* Optional: Add left border based on status */
+/* You would need to add classes like 'status-ok', 'status-warning', 'status-error' in dashboard.html for this */
+/*
+.list-group-item.status-ok { border-left-color: var(--success-color); }
+.list-group-item.status-warning { border-left-color: var(--warning-color); }
+.list-group-item.status-error { border-left-color: var(--danger-color); }
+*/
+
+.list-group-item .fa-check-circle,
+.list-group-item .fa-exclamation-triangle,
+.list-group-item .fa-times-circle,
+.list-group-item .fa-question-circle {
+    font-size: 1.4em; /* Make icons larger */
+    vertical-align: middle;
+}
+
+.list-group-item div:first-child { /* Target the div containing icon and text */
+    display: flex;
+    align-items: center; /* Align icon and text vertically */
+}
+
+.list-group-item div:first-child span.me-2 { /* The span holding the icon */
+    flex-shrink: 0; /* Prevent icon span from shrinking */
+    line-height: 1; /* Adjust line height for icon alignment */
+    margin-right: 0.75rem !important; /* Ensure consistent spacing */
+}
+
+.list-group-item div:first-child div { /* Target the inner div holding strong/small */
+    line-height: 1.3; /* Adjust line height for text */
+}
+
+
+.list-group-item small.text-muted {
+    color: var(--text-muted-color) !important; /* Ensure muted color */
+    display: block; /* Make it take its own line */
+    font-size: 0.85em;
 }
 
 /* Ensure last item doesn't have double border if card has padding */
@@ -54,11 +132,17 @@ main.container {
 }
 
 .list-group-item:hover {
-    background-color: #f8f9fa; /* Subtle hover effect */
+    background-color: var(--light-color); /* Subtle hover effect */
 }
 
 .list-group-item strong {
-    color: var(--bs-primary); /* Use theme primary color */
+    color: var(--primary-color); /* Use theme primary color */
+}
+
+/* Align buttons to the right */
+.list-group-item > div:last-child { /* Target the div holding the buttons */
+    display: flex;
+    align-items: center;
 }
 
 /* Form Styling */
@@ -66,8 +150,8 @@ main.container {
     font-weight: 500; /* Slightly less bold */
 }
 .form-control:focus {
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
 }
 .btn-primary {
     /* Use theme default */
@@ -88,7 +172,7 @@ main.container {
     position: relative;
     height: 40vh; /* Adjust height as needed */
     width: 100%;
-    background-color: #fff;
+    background-color: var(--card-bg);
     padding: 1rem;
     border-radius: 0.3rem;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -104,7 +188,7 @@ main.container {
     /* bottom: 0; */
     width: 100%;
     line-height: 60px; /* Vertically center the text there */
-    background-color: #e9ecef; /* Match card header */
+    background-color: var(--card-header-bg); /* Match card header */
     box-shadow: 0 -1px 3px rgba(0,0,0,.1);
     margin-top: 2rem; /* Add margin to separate from content above */
     text-align: center; /* Ensure text is centered */

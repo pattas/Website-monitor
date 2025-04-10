@@ -22,9 +22,13 @@
          <form action="{{ url_for('run_full_scan', url_id=url.id) }}" method="POST" class="mb-2">
             {% set can_check_full = url.last_full_scan is none or (now() - url.last_full_scan) > timedelta(hours=23) %}
             <button type="submit" class="btn btn-sm btn-outline-info" {{ 'disabled' if not can_check_full else '' }} title="{{ 'Run Full Scan (RDAP, DNS, Traceroute)' if can_check_full else 'Full scan run recently' }}">
-                <i class="fas fa-network-wired me-1"></i> Run Full Scan
+                 <i class="fas fa-network-wired me-1"></i> Run Full Scan
             </button>
         </form>
+        {# PDF Export Button #}
+        <a href="{{ url_for('export_url_details_pdf', url_id=url.id) }}" class="btn btn-sm btn-outline-success mb-2" title="Export Details to PDF">
+            <i class="fas fa-file-pdf me-1"></i> Export PDF
+        </a>
     </div>
 </div>
 <p><a href="{{ url.url }}" target="_blank" rel="noopener noreferrer">{{ url.url }}</a></p>
@@ -303,4 +307,4 @@
 
     document.addEventListener('DOMContentLoaded', fetchDetailChartData);
 </script>
-{% endblock %} 
+{% endblock %}

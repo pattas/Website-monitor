@@ -2,6 +2,7 @@ import socket
 import ssl
 import whois
 from datetime import datetime, timezone
+from app import app # Import app for logger
 from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse
 from cryptography import x509
@@ -21,13 +22,13 @@ def get_ssl_expiry(hostname: str) -> Optional[datetime]:
                 if not cert_der:
                     return None
                 cert = x509.load_der_x509_certificate(cert_der, default_backend())
-                # Use not_valid_after (returns naive datetime in UTC)
-                return cert.not_valid_after
+                # Use not_valid_after_utc (returns timezone-aware UTC datetime)
+                return cert.not_valid_after_utc
     except (socket.gaierror, socket.timeout, ssl.SSLError, ConnectionRefusedError, OSError) as e:
-        print(f"SSL check failed for {hostname}: {e}")
+        app.logger.warning(f"SSL check failed for {hostname}: {e}")
         return None
     except Exception as e:
-        print(f"Unexpected error during SSL check for {hostname}: {e}")
+        app.logger.error(f"Unexpected error during SSL check for {hostname}: {e}", exc_info=True)
         return None
 
 def get_domain_expiry(domain: str) -> Optional[datetime]:
@@ -57,20 +58,20 @@ def get_domain_expiry(domain: str) -> Optional[datetime]:
         return min(naive_utc_dates) if naive_utc_dates else None
 
     except whois.parser.PywhoisError as e:
-        print(f"WHOIS lookup failed for {domain}: {e}")
+        app.logger.warning(f"WHOIS lookup failed for {domain}: {e}")
         return None
     except socket.timeout:
-        print(f"WHOIS lookup timed out for {domain}")
+        app.logger.warning(f"WHOIS lookup timed out for {domain}")
         return None
     except Exception as e:
-        print(f"Unexpected error during WHOIS lookup for {domain}: {e}")
+        app.logger.error(f"Unexpected error during WHOIS lookup for {domain}: {e}", exc_info=True)
         return None
 
 def run_advanced_checks_for_url(url_obj):
     """Runs SSL and Domain expiry checks for a MonitoredURL object and updates its fields.
        Returns True if data was updated, False otherwise.
     """
-    print(f"Running advanced checks for {url_obj.url}...")
+    app.logger.debug(f"Running advanced checks for {url_obj.url} (ID: {url_obj.id})...")
     updated = False
     parsed_url = urlparse(url_obj.url)
     hostname = parsed_url.netloc
@@ -81,14 +82,14 @@ def run_advanced_checks_for_url(url_obj):
     # --- Check SSL Expiry (only for https) ---
     new_ssl_expiry = None
     if parsed_url.scheme == 'https':
-        new_ssl_expiry = get_ssl_expiry(hostname)
+        new_ssl_expiry = get_ssl_expiry(hostname) # This function now logs errors
         if new_ssl_expiry:
-            print(f"  SSL Expiry for {hostname}: {new_ssl_expiry}")
+            app.logger.debug(f"  SSL Expiry for {hostname}: {new_ssl_expiry}")
             if url_obj.ssl_expiry_date != new_ssl_expiry:
                  url_obj.ssl_expiry_date = new_ssl_expiry
                  updated = True
         else:
-             print(f"  SSL Check failed for {hostname}")
+             app.logger.debug(f"  SSL Check failed or returned no date for {hostname}")
              # Decide if failure should clear the date
              # if url_obj.ssl_expiry_date is not None:
              #    url_obj.ssl_expiry_date = None
@@ -99,21 +100,21 @@ def run_advanced_checks_for_url(url_obj):
         updated = True
 
     # --- Check Domain Expiry ---
-    new_domain_expiry = get_domain_expiry(domain)
+    new_domain_expiry = get_domain_expiry(domain) # This function now logs errors
     if new_domain_expiry:
-        print(f"  Domain Expiry for {domain}: {new_domain_expiry}")
+        app.logger.debug(f"  Domain Expiry for {domain}: {new_domain_expiry}")
         if url_obj.domain_expiry_date != new_domain_expiry:
             url_obj.domain_expiry_date = new_domain_expiry
             updated = True
     else:
-        print(f"  Domain Check failed for {domain}")
+        app.logger.debug(f"  Domain Check failed or returned no date for {domain}")
         # Decide if failure should clear the date
         # if url_obj.domain_expiry_date is not None:
         #     url_obj.domain_expiry_date = None
         #     updated = True
 
-    if updated:
-        url_obj.last_advanced_check = datetime.now(timezone.utc)
+    # Always update the timestamp when the check is run
+    url_obj.last_advanced_check = datetime.now(timezone.utc)
 
     return updated
 
@@ -135,7 +136,7 @@ def get_rdap_info(ip_address: str) -> Optional[Dict[str, Any]]:
         results = obj.lookup_rdap(depth=1)
         return results
     except Exception as e:
-        print(f"RDAP lookup failed for {ip_address}: {e}")
+        app.logger.warning(f"RDAP lookup failed for {ip_address}: {e}")
         return None
 
 def get_dns_records(hostname: str) -> Dict[str, List[str]]:
@@ -153,7 +154,7 @@ def get_dns_records(hostname: str) -> Dict[str, List[str]]:
         except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.exception.Timeout, dns.resolver.NoNameservers):
             records[record_type] = [] # Record not found or error
         except Exception as e:
-            print(f"DNS lookup for {record_type} failed for {hostname}: {e}")
+            app.logger.warning(f"DNS lookup for {record_type} failed for {hostname}: {e}")
             records[record_type] = [f"Error: {e}"]
     return records
 
@@ -162,25 +163,45 @@ def run_traceroute(hostname: str) -> str:
     command = []
     system = platform.system()
 
-    if system == "Windows":
-        command = ["tracert", "-d", "-w", "1000", hostname] # -d avoids resolving names, -w 1sec timeout
-    elif system == "Linux":
-        # Use -q 1 to send only one probe per hop, -w 1 for 1sec wait, -n to avoid resolving names
-        command = ["traceroute", "-q", "1", "-w", "1", "-n", hostname]
-    elif system == "Darwin": # macOS
-        command = ["traceroute", "-q", "1", "-w", "1", "-n", hostname]
+    # Try using tcptraceroute first as it might not need root
+    if system == "Linux" or system == "Darwin":
+        # Use tcptraceroute (installed at /usr/bin/tcptraceroute)
+        # -n avoids resolving names
+        command = ["/usr/bin/tcptraceroute", "-n", hostname]
+    elif system == "Windows":
+        # Fallback to tracert on Windows
+        command = ["tracert", "-d", "-w", "1000", hostname]
     else:
-        return f"Traceroute command not available for system: {system}"
+        return f"Traceroute/tcptraceroute command not available for system: {system}"
 
+    # Execute the chosen command
     try:
         # Run the command with a timeout (e.g., 30 seconds)
         result = subprocess.run(command, capture_output=True, text=True, timeout=30, check=False)
+
+        # Check for common errors
         if result.returncode != 0:
-            return f"Traceroute command failed (Exit Code: {result.returncode}):\n{result.stderr}"
+            output = result.stderr or result.stdout
+            if "No such file or directory" in output or result.returncode == 127:
+                 app.logger.error(f"Command '{command[0]}' not found for hostname {hostname}.")
+                 return f"Error: '{command[0]}' command not found. Please ensure it's installed and the path is correct."
+            # Check for permission errors specifically with tcptraceroute
+            if command[0] == "/usr/bin/tcptraceroute" and "Operation not permitted" in output:
+                 app.logger.warning(f"tcptraceroute failed due to permissions for {hostname}. Root privileges might be required.")
+                 return f"Error: tcptraceroute requires root privileges to run on this system.\nOutput:\n{output}"
+            # General failure
+            app.logger.warning(f"Command '{command[0]}' failed for {hostname} (Exit Code: {result.returncode}):\n{output}")
+            return f"Command '{command[0]}' failed (Exit Code: {result.returncode}):\n{output}"
+
+        # Success
         return result.stdout
-    except FileNotFoundError:
-        return f"Error: '{command[0]}' command not found. Please install it."
+
+    except FileNotFoundError: # Catch if the command path itself is invalid
+        app.logger.error(f"Command '{command[0]}' could not be executed (FileNotFoundError) for hostname {hostname}.")
+        return f"Error: Could not execute '{command[0]}'. Please ensure the path is correct and permissions are set."
     except subprocess.TimeoutExpired:
+        app.logger.warning(f"Command '{command[0]}' timed out for hostname {hostname}.")
         return "Error: Traceroute command timed out."
     except Exception as e:
-        return f"Error running traceroute: {e}" 
+        app.logger.error(f"Error running traceroute for hostname {hostname}: {e}", exc_info=True)
+        return f"Error running traceroute: {e}"

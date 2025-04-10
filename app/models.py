@@ -44,6 +44,12 @@ class MonitoredURL(db.Model):
     last_advanced_check: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True)
     last_full_scan: so.Mapped[Optional[datetime]] = so.mapped_column(nullable=True)
 
+    # Fields to store last full scan results
+    last_scan_ip: so.Mapped[Optional[str]] = so.mapped_column(sa.String(45), nullable=True) # IPv6 compatible length
+    last_scan_rdap: so.Mapped[Optional[str]] = so.mapped_column(sa.Text, nullable=True) # Store JSON as text
+    last_scan_dns: so.Mapped[Optional[str]] = so.mapped_column(sa.Text, nullable=True) # Store JSON as text
+    last_scan_traceroute: so.Mapped[Optional[str]] = so.mapped_column(sa.Text, nullable=True)
+
     def __repr__(self):
         return f'<MonitoredURL {self.url}>'
 

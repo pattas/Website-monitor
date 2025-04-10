@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoring Report: {{ url.name or url.url }}</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.5;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #0056b3; /* Darker blue for headings */
+            margin-bottom: 0.5em;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .url-info, .uptime-stats, .history-log {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .url-info p, .uptime-stats p {
+            margin: 5px 0;
+        }
+        .url-info strong, .uptime-stats strong {
+            display: inline-block;
+            min-width: 150px; /* Align values */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        th {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .status-ok { color: green; }
+        .status-warn { color: orange; }
+        .status-error { color: red; }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #777;
+        }
+        .full-scan-results {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        .scan-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+        .scan-section h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+         .scan-section h4 {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-size: 1em;
+            color: #555;
+        }
+        .scan-section p, .scan-section ul {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        .scan-section ul {
+            padding-left: 20px;
+        }
+        .scan-section li {
+            margin-bottom: 3px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            white-space: pre-wrap;       /* Since CSS 2.1 */
+            white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+            white-space: -pre-wrap;      /* Opera 4-6 */
+            white-space: -o-pre-wrap;    /* Opera 7 */
+            word-wrap: break-word;       /* Internet Explorer 5.5+ */
+            font-size: 0.85em;
+        }
+        code {
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Website Monitoring Report</h1>
+
+    <div class="url-info">
+        <h2>URL Details</h2>
+        <p><strong>Name:</strong> {{ url.name or 'N/A' }}</p>
+        <p><strong>URL:</strong> {{ url.url }}</p>
+        <p><strong>Added:</strong> {{ url.added_at.strftime('%Y-%m-%d %H:%M:%S') if url.added_at else 'N/A' }} UTC</p>
+        <p><strong>SSL Expiry:</strong> {{ url.ssl_expiry_date.strftime('%Y-%m-%d') if url.ssl_expiry_date else 'N/A or Not HTTPS' }}</p>
+        <p><strong>Domain Expiry:</strong> {{ url.domain_expiry_date.strftime('%Y-%m-%d') if url.domain_expiry_date else 'N/A' }}</p>
+    </div>
+
+    <div class="uptime-stats">
+        <h2>Uptime Statistics</h2>
+        <p><strong>Last 24 Hours:</strong> {{ "%.2f"|format(uptime_24h) }}% ({{ successful_checks_24h }}/{{ total_checks_24h }} checks)</p>
+        <p><strong>Last 7 Days:</strong> {{ "%.2f"|format(uptime_7d) }}% ({{ successful_checks_7d }}/{{ total_checks_7d }} checks)</p>
+    </div>
+
+    <div class="history-log">
+        <h2>Recent Check History (Last {{ history_logs|length }} checks)</h2>
+        {% if history_logs %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp (UTC)</th>
+                    <th>Status Code</th>
+                    <th>Response Time (ms)</th>
+                    <th>Status</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in history_logs %}
+                <tr>
+                    <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ log.status_code if log.status_code is not none else '-' }}</td>
+                    <td>{{ log.response_time_ms|round(2) if log.response_time_ms is not none else '-' }}</td>
+                    <td>
+                        {% if log.status_code and log.status_code >= 200 and log.status_code < 300 %}
+                            <span class="status-ok">OK</span>
+                        {% elif log.status_code %}
+                            <span class="status-warn">WARN</span>
+                        {% else %}
+                            <span class="status-error">ERROR</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ log.error_message or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No check history available.</p>
+        {% endif %}
+    </div>
+
+    {# --- Full Scan Results --- #}
+    {% if last_full_scan_time %}
+    <div class="full-scan-results">
+        <h2>Full Scan Results (Last Run: {{ last_full_scan_time.strftime('%Y-%m-%d %H:%M:%S') }} UTC)</h2>
+
+        {# IP Address #}
+        <div class="scan-section">
+            <h3>IP Address</h3>
+            <p>{{ last_scan_ip or 'Not available' }}</p>
+        </div>
+
+        {# RDAP Info #}
+        <div class="scan-section">
+            <h3>RDAP Information</h3>
+            {% if last_scan_rdap %}
+                {# Render RDAP JSON nicely in a pre block #}
+                <pre><code>{{ last_scan_rdap | tojson(indent=2) if last_scan_rdap is mapping else last_scan_rdap }}</code></pre>
+            {% else %}
+                <p>Not available or scan failed.</p>
+            {% endif %}
+        </div>
+
+        {# DNS Records #}
+        <div class="scan-section">
+            <h3>DNS Records</h3>
+            {% if last_scan_dns and last_scan_dns is mapping %}
+                {% for type, records in last_scan_dns.items() %}
+                    {% if records %}
+                    <h4>{{ type }} Records:</h4>
+                    <ul>
+                        {% for record in records %}
+                            <li>{{ record }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                {% else %}
+                 <p>No DNS records found or scan failed.</p>
+                {% endfor %}
+            {% else %}
+                <p>Not available or scan failed.</p>
+            {% endif %}
+        </div>
+
+        {# Traceroute #}
+        <div class="scan-section">
+            <h3>Traceroute</h3>
+            {% if last_scan_traceroute %}
+                <pre><code>{{ last_scan_traceroute }}</code></pre>
+            {% else %}
+                <p>Not available or scan failed.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+     <div class="full-scan-results">
+        <h2>Full Scan Results</h2>
+        <p>Full scan has not been run yet.</p>
+     </div>
+    {% endif %}
+    {# --- End Full Scan Results --- #}
+
+
+    <div class="footer">
+        Report generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+    </div>
+</body>
+</html>

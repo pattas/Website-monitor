@@ -59,7 +59,8 @@
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <a href="{{ url_for('delete_url', url_id=url.id) }}" class="btn btn-danger">Delete</a>
+                            {# Added class confirm-delete-link #}
+                            <a href="{{ url_for('delete_url', url_id=url.id) }}" class="btn btn-danger confirm-delete-link">Delete</a>
                           </div>
                         </div>
                       </div>
@@ -254,6 +255,22 @@
 
     // Optional: Auto-refresh the chart data every 30 seconds
     // setInterval(fetchChartData, 30000); // 30 seconds
+
+    // --- Script to hide delete modal on confirm click ---
+    document.querySelectorAll('.confirm-delete-link').forEach(link => {
+        link.addEventListener('click', function(event) {
+            // Find the modal associated with this link
+            const modalElement = event.target.closest('.modal');
+            if (modalElement) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    // Hide the modal just before navigating away
+                    modalInstance.hide();
+                }
+            }
+            // Allow the default link behavior (navigation) to proceed
+        });
+    });
 
 </script>
 {% endblock %}

@@ -1,14 +1,17 @@
-from flask import render_template, flash, redirect, url_for, request, jsonify
+from flask import render_template, flash, redirect, url_for, request, jsonify, make_response
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
-from app import app, db
+from app import app, db, scheduler # Import app for logger
+from app import tasks # Import tasks module
 from app.forms import LoginForm, RegistrationForm, AddURLForm
 from app.models import User, MonitoredURL, MonitoringLog
 from urllib.parse import urlsplit, urlparse
+from apscheduler.jobstores.base import JobLookupError # Import JobLookupError
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import desc
 from app.checks import run_advanced_checks_for_url, get_ip_address, get_rdap_info, get_dns_records, run_traceroute
 import json # For pretty printing RDAP
+from weasyprint import HTML, CSS # Import WeasyPrint
 
 @app.route('/')
 @app.route('/index')
@@ -88,8 +91,48 @@ def add_url():
         else:
             new_url = MonitoredURL(url=form.url.data, name=form.name.data, owner=current_user)
             db.session.add(new_url)
-            db.session.commit()
-            flash('URL added successfully!')
+            db.session.commit() # Commit to get the new_url.id
+
+            # Schedule jobs for the new URL
+            try:
+                job_id_standard = f'check_url_{new_url.id}'
+                scheduler.add_job(
+                    func=tasks.run_single_url_check,
+                    trigger='interval',
+                    seconds=5, # Changed from minutes=5
+                    id=job_id_standard,
+                    args=[new_url.id],
+                    replace_existing=True,
+                    misfire_grace_time=60
+                )
+                app.logger.info(f"Scheduled standard check for new URL {new_url.url} (ID: {new_url.id})")
+
+                job_id_advanced = f'advanced_check_url_{new_url.id}'
+                scheduler.add_job(
+                    func=tasks.run_single_url_advanced_check,
+                    trigger='interval',
+                    hours=24, # Match interval in __init__
+                    id=job_id_advanced,
+                    args=[new_url.id],
+                    replace_existing=True,
+                    misfire_grace_time=3600
+                )
+                app.logger.info(f"Scheduled recurring advanced check for new URL {new_url.url} (ID: {new_url.id})")
+
+                # Also schedule an immediate initial advanced check
+                job_id_initial_advanced = f'advanced_check_url_{new_url.id}_initial'
+                scheduler.add_job(
+                    func=tasks.run_single_url_advanced_check,
+                    trigger='date', # Run immediately
+                    id=job_id_initial_advanced,
+                    args=[new_url.id]
+                )
+                app.logger.info(f"Scheduled initial immediate advanced check for new URL {new_url.url} (ID: {new_url.id})")
+
+                flash('URL added and monitoring scheduled successfully!')
+            except Exception as e:
+                app.logger.error(f"Error scheduling jobs for new URL {new_url.id}: {e}", exc_info=True)
+                flash('URL added, but failed to schedule monitoring tasks. Please check logs.', 'warning')
     else:
         # Handle form errors (e.g., invalid URL)
         for field, errors in form.errors.items():
@@ -108,8 +151,41 @@ def delete_url(url_id):
         flash('You do not have permission to delete this URL.', 'danger')
         return redirect(url_for('dashboard'))
 
+    # Remove scheduled jobs before deleting the URL
+    job_id_standard = f'check_url_{url_id}'
+    job_id_advanced = f'advanced_check_url_{url_id}'
+    try:
+        scheduler.remove_job(job_id_standard)
+        app.logger.info(f"Removed standard check job {job_id_standard} for URL ID {url_id}")
+    except JobLookupError:
+        app.logger.warning(f"Standard check job {job_id_standard} not found for URL ID {url_id}, skipping removal.")
+    except Exception as e:
+        app.logger.error(f"Error removing job {job_id_standard} for URL ID {url_id}: {e}", exc_info=True)
+        flash('Error removing standard monitoring task. Please check logs.', 'warning')
+
+    try:
+        scheduler.remove_job(job_id_advanced)
+        app.logger.info(f"Removed advanced check job {job_id_advanced} for URL ID {url_id}")
+    except JobLookupError:
+        app.logger.warning(f"Recurring advanced check job {job_id_advanced} not found for URL ID {url_id}, skipping removal.")
+    except Exception as e:
+        app.logger.error(f"Error removing recurring job {job_id_advanced} for URL ID {url_id}: {e}", exc_info=True)
+        flash('Error removing recurring advanced monitoring task. Please check logs.', 'warning')
+
+    # Attempt to remove the initial job as well (it might have run and been removed already)
+    job_id_initial_advanced = f'advanced_check_url_{url_id}_initial'
+    try:
+        scheduler.remove_job(job_id_initial_advanced)
+        app.logger.info(f"Removed initial advanced check job {job_id_initial_advanced} for URL ID {url_id}")
+    except JobLookupError:
+        # This is expected if the job already ran
+        app.logger.debug(f"Initial advanced check job {job_id_initial_advanced} not found for URL ID {url_id} (likely already run), skipping removal.")
+    except Exception as e:
+        app.logger.error(f"Error removing initial job {job_id_initial_advanced} for URL ID {url_id}: {e}", exc_info=True)
+        # Don't necessarily flash an error here, as it might be expected to fail
+
     # Cascade delete will handle the logs automatically due to model definition
-    # # Delete associated logs first (No longer needed)
+    # Delete associated logs first (No longer needed)
     # logs_to_delete = db.session.scalars(sa.select(MonitoringLog).where(MonitoringLog.monitored_url_id == url_id)).all()
     # for log in logs_to_delete:
     #     db.session.delete(log)
@@ -197,7 +273,16 @@ def view_url_details(url_id):
         uptime_7d=uptime_7d,
         successful_checks_7d=successful_checks_7d,
         total_checks_7d=total_checks_7d,
-        history_logs=history_logs
+        history_logs=history_logs,
+        # Pass the stored scan results to the template
+        # The template already has logic to display scan_results if they exist
+        # We just need to construct a similar dictionary from the stored fields
+        scan_results={
+            'ip_address': url.last_scan_ip,
+            'rdap': url.last_scan_rdap, # Already stored as string
+            'dns': json.loads(url.last_scan_dns) if url.last_scan_dns else None, # Parse DNS JSON
+            'traceroute': url.last_scan_traceroute
+        } if url.last_full_scan else None # Only pass if a scan has been run
     )
 
 @app.route('/api/monitoring_data')
@@ -329,7 +414,7 @@ def trigger_advanced_check(url_id):
         return redirect(url_for('view_url_details', url_id=url_id))
 
     try:
-        print(f"Manual trigger for advanced checks on {url.url}")
+        app.logger.info(f"Manual trigger for advanced checks on {url.url} (ID: {url_id}) by user {current_user.username}")
         updated = run_advanced_checks_for_url(url)
         if updated:
             db.session.commit()
@@ -344,7 +429,7 @@ def trigger_advanced_check(url_id):
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error during manual advanced check trigger: {e}")
+        app.logger.error(f"Error during manual advanced check trigger for URL ID {url_id}: {e}", exc_info=True)
         flash('An error occurred while running the advanced check.', 'danger')
 
     return redirect(url_for('view_url_details', url_id=url_id))
@@ -372,28 +457,36 @@ def run_full_scan(url_id):
     hostname = parsed_url.netloc
 
     try:
+        app.logger.info(f"Starting full scan for {url.url} (ID: {url_id}) by user {current_user.username}")
         ip_address = get_ip_address(hostname)
         scan_results['ip_address'] = ip_address or 'Could not resolve IP'
-        print(f"Scanning {hostname} ({ip_address})...")
+        app.logger.debug(f"Full scan for {url.url}: IP resolved to {ip_address}")
 
         # RDAP Scan
-        print("  Running RDAP scan...")
+        app.logger.debug(f"Full scan for {url.url}: Running RDAP scan...")
         rdap_data = get_rdap_info(ip_address) if ip_address else None
         # Pretty print the RDAP JSON data for display
         scan_results['rdap'] = json.dumps(rdap_data, indent=2) if rdap_data else 'RDAP lookup failed or no data.'
 
         # DNS Scan
-        print("  Running DNS scan...")
+        app.logger.debug(f"Full scan for {url.url}: Running DNS scan...")
         scan_results['dns'] = get_dns_records(hostname)
 
         # Traceroute Scan
-        print("  Running Traceroute scan...")
+        app.logger.debug(f"Full scan for {url.url}: Running Traceroute scan...")
         scan_results['traceroute'] = run_traceroute(hostname)
 
-        # --- Update Timestamp and Commit ---
-        url.last_full_scan = now
+        # --- Update Timestamp and Save Results to DB ---
+        url.last_full_scan = now # Already UTC
+        url.last_scan_ip = ip_address
+        url.last_scan_rdap = scan_results['rdap'] # Already JSON string or error message
+        # Convert DNS dict to JSON string for storage
+        url.last_scan_dns = json.dumps(scan_results['dns'])
+        url.last_scan_traceroute = scan_results['traceroute']
+
         db.session.commit()
-        flash('Full scan completed!', 'success')
+        app.logger.info(f"Full scan completed successfully for {url.url} (ID: {url_id}) and results saved.")
+        flash('Full scan completed and results saved!', 'success')
 
         # --- Re-render Detail Page with Scan Results --- #
         # We need to fetch all other data again, similar to view_url_details
@@ -438,6 +531,96 @@ def run_full_scan(url_id):
 
     except Exception as e:
         db.session.rollback() # Rollback timestamp update if scan fails badly
-        print(f"Error during full scan execution: {e}")
+        app.logger.error(f"Error during full scan execution for URL ID {url_id}: {e}", exc_info=True)
         flash('An unexpected error occurred during the full scan.', 'danger')
         return redirect(url_for('view_url_details', url_id=url_id))
+
+
+@app.route('/url/<int:url_id>/export/pdf')
+@login_required
+def export_url_details_pdf(url_id):
+    """Exports the details and history of a monitored URL to a PDF file."""
+    url = db.session.get(MonitoredURL, url_id)
+    if url is None or url.owner != current_user:
+        flash('URL not found or permission denied.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    # Fetch all necessary data for the PDF (similar to view_url_details, but maybe more logs)
+    history_logs = db.session.scalars(
+        sa.select(MonitoringLog)
+        .where(MonitoringLog.monitored_url_id == url.id)
+        .order_by(MonitoringLog.timestamp.desc())
+        # Potentially fetch more logs for the PDF, e.g., limit(200) or all?
+        # Be mindful of performance if fetching all logs for very long histories.
+        .limit(200)
+    ).all()
+
+    # Fetch latest log for status
+    latest_log = history_logs[0] if history_logs else None
+
+    # Uptime calculation (copied from view_url_details - consider refactoring)
+    now = datetime.now(timezone.utc)
+    time_24h_ago = now - timedelta(hours=24)
+    time_7d_ago = now - timedelta(days=7)
+    def calculate_uptime(start_time):
+        logs_in_period = db.session.scalars(
+            sa.select(MonitoringLog)
+            .where(
+                MonitoringLog.monitored_url_id == url_id,
+                MonitoringLog.timestamp >= start_time
+            )
+        ).all()
+        total_checks = len(logs_in_period)
+        successful_checks = sum(1 for log in logs_in_period if log.status_code and 200 <= log.status_code < 300)
+        uptime_percentage = (successful_checks / total_checks * 100) if total_checks > 0 else 100.0
+        return uptime_percentage, successful_checks, total_checks
+    uptime_24h, successful_checks_24h, total_checks_24h = calculate_uptime(time_24h_ago)
+    uptime_7d, successful_checks_7d, total_checks_7d = calculate_uptime(time_7d_ago)
+
+    # Helper function to safely parse stored JSON
+    def parse_json_string(json_string):
+        if not json_string:
+            return None
+        try:
+            return json.loads(json_string)
+        except json.JSONDecodeError:
+            app.logger.warning(f"Failed to parse stored JSON: {json_string}")
+            return None # Or return the raw string if preferred
+
+    # Fetch stored scan results
+    last_scan_rdap_data = parse_json_string(url.last_scan_rdap)
+    last_scan_dns_data = parse_json_string(url.last_scan_dns)
+
+    # Render an HTML template specifically designed for PDF output
+    html_string = render_template(
+        'pdf_template.html',
+        url=url,
+        latest_log=latest_log,
+        history_logs=history_logs,
+        uptime_24h=uptime_24h,
+        successful_checks_24h=successful_checks_24h,
+        total_checks_24h=total_checks_24h,
+        uptime_7d=uptime_7d,
+        successful_checks_7d=successful_checks_7d,
+        total_checks_7d=total_checks_7d,
+        now=datetime.now(timezone.utc), # Pass current time for report date
+        # Pass scan results (parsed or raw)
+        last_scan_ip=url.last_scan_ip,
+        last_scan_rdap=last_scan_rdap_data, # Parsed JSON or None
+        last_scan_dns=last_scan_dns_data,   # Parsed JSON or None
+        last_scan_traceroute=url.last_scan_traceroute,
+        last_full_scan_time=url.last_full_scan # Pass the timestamp too
+    )
+
+    # Generate PDF using WeasyPrint
+    # We can add basic CSS directly or link to a specific PDF CSS file
+    pdf_bytes = HTML(string=html_string).write_pdf()
+
+    # Create response
+    response = make_response(pdf_bytes)
+    response.headers['Content-Type'] = 'application/pdf'
+    # Sanitize filename
+    safe_filename = "".join([c for c in (url.name or url.url) if c.isalpha() or c.isdigit() or c in ('_','-')]).rstrip()
+    response.headers['Content-Disposition'] = f'attachment; filename="{safe_filename}_report.pdf"'
+
+    return response

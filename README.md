@@ -25,6 +25,7 @@ A web application built with Flask and Python to monitor website uptime, respons
     *   Button to run a full diagnostic scan (RDAP, DNS Records, Traceroute) (max once per ~24h).
 *   **Data Visualization:** Interactive charts using Chart.js.
 *   **Modern UI:** Clean interface using Bootstrap 5 (Bootswatch Pulse theme) and Font Awesome icons.
+*   **PDF Export:** Export detailed URL monitoring data (including last full scan results) to a PDF report.
 
 ## Screenshot
 
@@ -52,6 +53,7 @@ A web application built with Flask and Python to monitor website uptime, respons
 *   **Charting:** Chart.js (with date-fns adapter)
 *   **Icons:** Font Awesome
 *   **Templating:** Jinja2
+*   **PDF Generation:** WeasyPrint
 *   **Configuration:** python-dotenv (.env file)
 
 ## Prerequisites
@@ -59,11 +61,16 @@ A web application built with Flask and Python to monitor website uptime, respons
 *   Python 3 (version 3.8 or higher recommended)
 *   `pip` (Python package installer)
 *   `git` (for cloning the repository)
-*   `traceroute` command-line tool:
-    *   **Debian/Ubuntu:** `sudo apt update && sudo apt install traceroute`
-    *   **Fedora/CentOS:** `sudo dnf install traceroute`
-    *   **macOS:** Usually pre-installed or via Homebrew (`brew install traceroute`)
-    *   **Windows:** Uses built-in `tracert`. Ensure it's in your system's PATH.
+*   `tcptraceroute` command-line tool (used as a fallback if standard `traceroute` fails due to permissions):
+    *   **Debian/Ubuntu:** `sudo apt update && sudo apt install tcptraceroute`
+    *   **Fedora/CentOS:** `sudo dnf install tcptraceroute`
+    *   **macOS:** Via Homebrew (`brew install tcptraceroute`)
+    *   **Windows:** Uses built-in `tracert`.
+*   **WeasyPrint Dependencies:** `WeasyPrint` requires system libraries like Pango, Cairo, and GDK-PixBuf. Installation methods vary by OS:
+    *   **Debian/Ubuntu:** `sudo apt install build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info`
+    *   **Fedora/CentOS:** `sudo dnf install python3-devel python3-pip python3-setuptools python3-wheel python3-cffi cairo pango gdk-pixbuf2 libffi-devel`
+    *   **macOS:** `brew install pango gdk-pixbuf libffi`
+    *   **Windows:** Refer to the WeasyPrint documentation for Windows installation specifics.
 
 ## Setup and Installation
 
@@ -158,7 +165,8 @@ You need to run two separate processes:
 8.  The detail page shows current status, uptime stats, SSL/Domain expiry info, a response time chart, and recent check history.
 9.  On the detail page, you can use the manual scan buttons:
     *   **"Refresh SSL/Domain"**: Triggers an immediate check for SSL and Domain expiry (limit: once per ~24h).
-    *   **"Run Full Scan"**: Triggers RDAP, DNS, and Traceroute checks (limit: once per ~24h). Results are displayed on the page after the scan completes.
+    *   **"Run Full Scan"**: Triggers RDAP, DNS, and Traceroute checks (limit: once per ~24h). Results are stored and displayed on the page.
+    *   **"Export PDF"**: Downloads a PDF report containing URL details, uptime stats, recent history, and the results from the last full scan.
 
 ## Contributing
 
@@ -166,4 +174,4 @@ Contributions are welcome! Please feel free to submit a pull request or open an 
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file (if added) for details. 
+This project is licensed under the MIT License - see the LICENSE file (if added) for details.

@@ -1,0 +1,104 @@
+2025-04-10 12:31:02,580 INFO: Advanced check task for URL ID 4: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
+2025-04-10 12:31:05,724 INFO: Starting full scan for https://clipron.com (ID: 4) by user patrik [in /home/patrik/Documents/work/WEB-test/app/routes.py:460]
+2025-04-10 12:31:07,328 ERROR: Traceroute command '/usr/sbin/traceroute' could not be executed (FileNotFoundError) for hostname clipron.com. [in /home/patrik/Documents/work/WEB-test/app/checks.py:189]
+2025-04-10 12:31:07,345 INFO: Full scan completed successfully for https://clipron.com (ID: 4) and results saved. [in /home/patrik/Documents/work/WEB-test/app/routes.py:488]
+2025-04-10 12:34:46,493 INFO: Application startup [in /home/patrik/Documents/work/WEB-test/app/__init__.py:74]
+2025-04-10 12:34:46,497 INFO: Scheduler started. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:151]
+2025-04-10 12:34:46,498 INFO: Attempting to schedule initial jobs... [in /home/patrik/Documents/work/WEB-test/app/__init__.py:78]
+2025-04-10 12:34:46,602 INFO: Found 3 URLs in the database for initial scheduling. [in /home/patrik/Documents/work/WEB-test/app/__init__.py:83]
+2025-04-10 12:34:46,617 INFO: Scheduled initial immediate advanced check job 'advanced_check_url_4_initial' for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/__init__.py:139]
+2025-04-10 12:34:46,619 INFO: Starting advanced check task for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 12:34:53,576 INFO: Removed standard check job check_url_4 for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/routes.py:159]
+2025-04-10 12:34:53,587 INFO: Removed advanced check job advanced_check_url_4 for URL ID 4 [in /home/patrik/Documents/work/WEB-test/app/routes.py:168]
+2025-04-10 12:34:55,929 INFO: Removed standard check job check_url_3 for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/routes.py:159]
+2025-04-10 12:34:55,941 INFO: Removed advanced check job advanced_check_url_3 for URL ID 3 [in /home/patrik/Documents/work/WEB-test/app/routes.py:168]
+2025-04-10 12:34:57,506 ERROR: Advanced check task for URL ID 4: Outer exception during task execution: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: UPDATE statement on table 'monitored_url' expected to update 1 row(s); 0 were matched. (Background on this error at: https://sqlalche.me/e/20/7s2a) [in /home/patrik/Documents/work/WEB-test/app/tasks.py:87]
+Traceback (most recent call last):
+  File "/home/patrik/Documents/work/WEB-test/app/tasks.py", line 77, in run_single_url_advanced_check
+    db.session.commit()
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4353, in flush
+    self._flush(objects)
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4488, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4449, in _flush
+    flush_context.execute()
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 948, in _emit_update_statements
+    raise orm_exc.StaleDataError(
+sqlalchemy.orm.exc.StaleDataError: UPDATE statement on table 'monitored_url' expected to update 1 row(s); 0 were matched.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/patrik/Documents/work/WEB-test/app/tasks.py", line 81, in run_single_url_advanced_check
+    app.logger.error(f"Advanced check task for URL ID {url_id}: Error during check execution or commit for {url_obj.url}: {e_inner}", exc_info=True)
+                                                                                                            ^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 566, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 1086, in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 1116, in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/state.py", line 803, in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 1670, in load_scalar_attributes
+    result = load_on_ident(
+             ^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 509, in load_on_ident
+    return load_on_pk_identity(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 694, in load_on_pk_identity
+    session.execute(
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2241, in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2110, in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 103, in _go
+    self._raise_for_prerequisite_state(fn.__name__, current_state)
+  File "/var/data/python/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 973, in _raise_for_prerequisite_state
+    raise sa_exc.PendingRollbackError(
+sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: UPDATE statement on table 'monitored_url' expected to update 1 row(s); 0 were matched. (Background on this error at: https://sqlalche.me/e/20/7s2a)
+2025-04-10 12:34:58,235 INFO: Removed standard check job check_url_2 for URL ID 2 [in /home/patrik/Documents/work/WEB-test/app/routes.py:159]
+2025-04-10 12:34:58,248 INFO: Removed advanced check job advanced_check_url_2 for URL ID 2 [in /home/patrik/Documents/work/WEB-test/app/routes.py:168]
+2025-04-10 12:35:01,437 INFO: Scheduled standard check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:108]
+2025-04-10 12:35:01,449 INFO: Scheduled recurring advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:120]
+2025-04-10 12:35:01,461 INFO: Scheduled initial immediate advanced check for new URL https://clipron.com (ID: 1) [in /home/patrik/Documents/work/WEB-test/app/routes.py:130]
+2025-04-10 12:35:01,464 INFO: Starting advanced check task for URL ID 1 [in /home/patrik/Documents/work/WEB-test/app/tasks.py:58]
+2025-04-10 12:35:03,689 INFO: Starting full scan for https://clipron.com (ID: 1) by user patrik [in /home/patrik/Documents/work/WEB-test/app/routes.py:460]
+2025-04-10 12:35:05,093 ERROR: Command '/usr/bin/tcptraceroute' could not be executed (FileNotFoundError) for hostname clipron.com. [in /home/patrik/Documents/work/WEB-test/app/checks.py:200]
+2025-04-10 12:35:05,108 INFO: Full scan completed successfully for https://clipron.com (ID: 1) and results saved. [in /home/patrik/Documents/work/WEB-test/app/routes.py:488]
+2025-04-10 12:35:12,792 INFO: Advanced check task for URL ID 1: Session committed successfully. [in /home/patrik/Documents/work/WEB-test/app/tasks.py:78]
