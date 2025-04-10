@@ -82,7 +82,7 @@ It's designed for web administrators, developers, or anyone who needs to keep an
 
 1.  **Clone the Repository:**
     ```bash
-    git clone <your-repository-url> # Replace with your repo URL after uploading
+    git clone <(https://github.com/pattas/Website-monitor.git)> # Replace with your repo URL after uploading
     cd <repository-directory-name>
     ```
 
